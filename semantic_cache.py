@@ -9,6 +9,7 @@
 import ast
 import os
 import sys
+import time
 from typing import Generator
 
 leo_path = r'C:\Repos\leo-editor'
@@ -47,21 +48,21 @@ core_path = r'c:\Repos\leo-editor\leo\core'
 core_names = (
     # leoAPI, leoAtFile,  # leoAst,
     'leoApp',
-    # leoBackground,  # leoBridge, # leoBeautify,
-    # leoCache, leoChapters, leoColor, leoColorizer,
-    # leoCommands, leoConfig,  # leoCompare, leoDebugger,
-    # leoExternalFiles,
-    # leoFileCommands, leoFind, leoFrame,
-    # leoGlobals, leoGui,
-    # leoHistory, leoImport,  # leoJupytext,
-    # leoKeys, leoMarkup, leoMenu,
-    # leoNodes,
-    # leoPlugins,  # leoPersistence, leoPrinting, leoPymacs,
-    # leoQt,
-    # leoRst,  # leoRope,
-    # leoSessions, leoShadow,
-    # # leoTest2, leoTips, leoTokens,
-    # leoUndo, leoVersion,  # leoVim
+    'leoBackground',  # 'leoBridge', # 'leoBeautify',
+    'leoCache', 'leoChapters', 'leoColor', 'leoColorizer',
+    'leoCommands', 'leoConfig',  # 'leoCompare', 'leoDebugger',
+    'leoExternalFiles',
+    'leoFileCommands', 'leoFind', 'leoFrame',
+    'leoGlobals', 'leoGui',
+    'leoHistory', 'leoImport',  # 'leoJupytext',
+    'leoKeys', 'leoMarkup', 'leoMenu',
+    'leoNodes',
+    'leoPlugins',  # 'leoPersistence', 'leoPrinting', 'leoPymacs',
+    'leoQt',
+    'leoRst',  # leoRope,
+    'leoSessions', 'leoShadow',
+    # leoTest2', leoTips', leoTokens,
+    'leoUndo', 'leoVersion',  # 'leoVim'
 )
 #@-<< semantic_cache: data >>
 
@@ -102,15 +103,21 @@ def get_fields(node: Node) -> Generator:
     )
 #@+node:ekr.20250426052508.1: *3* function: main
 def main():
+    t1 = time.process_time()
+    n = 0
     for z in core_names:
+        n += 1
         path = f"{core_path}{os.sep}{z}.py"
         assert os.path.exists(path), repr(path)
         contents = g.readFile(path)
         tree = parse_ast(contents)
-        lines = g.splitlines(dump_ast(tree))
-        print(f"{z}.py...")
-        for i, line in enumerate(lines[:30]):
-            print(f"{i:2} {line.rstrip()}")
+        if 0:
+            lines = g.splitlines(dump_ast(tree))
+            print(f"{z}.py...")
+            for i, line in enumerate(lines[:30]):
+                print(f"{i:2} {line.rstrip()}")
+    t2 = time.process_time()
+    print(f"{n} files in {t2-t1:4.2} sec.")
 #@+node:ekr.20250426054003.1: *3* function: parse_ast
 def parse_ast(contents: str) -> ast.AST:
     """
