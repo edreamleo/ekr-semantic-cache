@@ -102,14 +102,14 @@ def get_fields(node: Node) -> Generator:
     )
 #@+node:ekr.20250426052508.1: *3* function: main
 def main():
-    g.trace()
     for z in core_names:
         path = f"{core_path}{os.sep}{z}.py"
         assert os.path.exists(path), repr(path)
         contents = g.readFile(path)
         tree = parse_ast(contents)
         lines = g.splitlines(dump_ast(tree))
-        for i, line in enumerate(lines[:100]):
+        print(f"{z}.py...")
+        for i, line in enumerate(lines[:30]):
             print(f"{i:2} {line.rstrip()}")
 #@+node:ekr.20250426054003.1: *3* function: parse_ast
 def parse_ast(contents: str) -> ast.AST:
