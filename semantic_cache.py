@@ -64,6 +64,8 @@ core_names = (
     # leoTest2', leoTips', leoTokens,
     'leoUndo', 'leoVersion',  # 'leoVim'
 )
+
+module_dict: dict[str, Node] = {}
 #@-<< semantic_cache: data >>
 
 #@+others
@@ -111,6 +113,7 @@ def main():
         assert os.path.exists(path), repr(path)
         contents = g.readFile(path)
         tree = parse_ast(contents)
+        module_dict[path] = tree
         if 0:
             lines = g.splitlines(dump_ast(tree))
             print(f"{z}.py...")
