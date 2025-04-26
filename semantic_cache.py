@@ -111,12 +111,15 @@ def main():
         n += 1
         path = f"{core_path}{os.sep}{z}.py"
         assert os.path.exists(path), repr(path)
+        timestamp = os.path.getmtime(path)
+        readable_time = time.ctime(timestamp)
         contents = g.readFile(path)
         tree = parse_ast(contents)
         module_dict[path] = tree
+        if 1:
+            print(f"{readable_time:<18} {z}.py")
         if 0:
             lines = g.splitlines(dump_ast(tree))
-            print(f"{z}.py...")
             for i, line in enumerate(lines[:30]):
                 print(f"{i:2} {line.rstrip()}")
     t2 = time.process_time()
