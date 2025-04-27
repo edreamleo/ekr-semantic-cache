@@ -8,6 +8,8 @@
 
 import ast
 import os
+import pickle
+import sqlite3
 import sys
 import time
 from typing import Generator
@@ -65,7 +67,9 @@ core_names = (
     'leoUndo', 'leoVersion',  # 'leoVim'
 )
 
+# Keys are full path names.
 module_dict: dict[str, Node] = {}
+mod_time_dict: dict[str, float] = {}
 #@-<< semantic_cache: data >>
 
 #@+others
@@ -106,24 +110,39 @@ def get_fields(node: Node) -> Generator:
 #@+node:ekr.20250426052508.1: *3* function: main
 def main():
     t1 = time.process_time()
-    n = 0
+    open_db()
+    t2 = time.process_time()
+    n_files, n_new, n_update = 0, 0, 0
     for z in core_names:
-        n += 1
+        n_files += 1
         path = f"{core_path}{os.sep}{z}.py"
         assert os.path.exists(path), repr(path)
-        timestamp = os.path.getmtime(path)
-        readable_time = time.ctime(timestamp)
-        contents = g.readFile(path)
-        tree = parse_ast(contents)
-        module_dict[path] = tree
-        if 1:
-            print(f"{readable_time:<18} {z}.py")
+        mod_time = os.path.getmtime(path)
+        old_mod_time = mod_time_dict.get(path, 0.0)
+        if mod_time > old_mod_time:
+            time_s = time.ctime(mod_time)
+            if old_mod_time == 0.0:
+                kind = 'New'
+                n_new += 1
+            else:
+                kind = 'Update'
+                n_update += 1
+            print(f"{kind:>6}: {time_s:<18} {z}.py")
+            contents = g.readFile(path)
+            tree = parse_ast(contents)
+            module_dict[path] = tree
+            mod_time_dict[path] = mod_time
         if 0:
             lines = g.splitlines(dump_ast(tree))
             for i, line in enumerate(lines[:30]):
                 print(f"{i:2} {line.rstrip()}")
-    t2 = time.process_time()
-    print(f"{n} files in {t2-t1:4.2} sec.")
+    t3 = time.process_time()
+    print(f"{n_files} total files, {n_update} updated, {n_new} new")
+    # print(f"open db: {t2-t1:4.2} sec.")
+    print(f"parse: {t3-t2:4.2} sec.")
+#@+node:ekr.20250426200952.1: *3* function: open_db
+def open_db() -> None:
+    pass
 #@+node:ekr.20250426054003.1: *3* function: parse_ast
 def parse_ast(contents: str) -> ast.AST:
     """
