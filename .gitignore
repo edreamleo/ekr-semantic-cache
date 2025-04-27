@@ -1,5 +1,6 @@
 # working Leo file: cacheRef *is* part of the repo.
 cache.leo
+*.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

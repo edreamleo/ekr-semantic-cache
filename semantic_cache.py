@@ -12,7 +12,7 @@ import pickle
 import sqlite3
 import sys
 import time
-from typing import Generator
+from typing import Any, Generator
 
 leo_path = r'C:\Repos\leo-editor'
 if leo_path not in sys.path:
@@ -42,6 +42,7 @@ from leo.core import leoGlobals as g
 #@+<< semantic_cache: annotations >>
 #@+node:ekr.20250426055357.1: ** << semantic_cache: annotations >>
 Node = ast.AST
+Value = Any
 #@-<< semantic_cache: annotations >>
 #@+<< semantic_cache: data >>
 #@+node:ekr.20250426054838.1: ** << semantic_cache: data >>
@@ -110,7 +111,7 @@ def get_fields(node: Node) -> Generator:
 #@+node:ekr.20250426052508.1: *3* function: main
 def main():
     t1 = time.process_time()
-    open_db()
+    db = sqlite3.connect("semantic_cache.db")
     t2 = time.process_time()
     n_files, n_new, n_update = 0, 0, 0
     for z in core_names:
@@ -139,10 +140,7 @@ def main():
     t3 = time.process_time()
     print(f"{n_files} total files, {n_update} updated, {n_new} new")
     # print(f"open db: {t2-t1:4.2} sec.")
-    print(f"parse: {t3-t2:4.2} sec.")
-#@+node:ekr.20250426200952.1: *3* function: open_db
-def open_db() -> None:
-    pass
+    print(f"  parse: {t3-t2:4.2} sec.")
 #@+node:ekr.20250426054003.1: *3* function: parse_ast
 def parse_ast(contents: str) -> ast.AST:
     """
