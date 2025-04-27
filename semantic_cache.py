@@ -18,8 +18,8 @@ leo_path = r'C:\Repos\leo-editor'
 if leo_path not in sys.path:
     sys.path.insert(0, leo_path)
 
-from leo.core import leoGlobals as g
-from leo.core.leoCache import SqlitePickleShare
+from leo.core import leoGlobals as g  # type:ignore[import-not-found]
+from leo.core.leoCache import SqlitePickleShare  # type:ignore[import-not-found]
 #@-<< semantic_cache: imports >>
 #@+<< semantic_cache: annotations >>
 #@+node:ekr.20250426055357.1: ** << semantic_cache: annotations >>
@@ -29,7 +29,7 @@ Value = Any
 #@+<< semantic_cache: data >>
 #@+node:ekr.20250427044849.1: ** << semantic_cache: data >>
 # The persistent cache.
-cache: "SemanticCache" = None
+cache: "SemanticCache" = None  # type:ignore[assignment]
 
 # Dictionaries. Keys are full path names.
 module_dict: dict[str, Node] = {}
@@ -138,7 +138,7 @@ def main():
     print(f"  parse: {t3-t2:4.2} sec.")
     print(f"  total: {t3-t1:4.2} sec.")
 #@+node:ekr.20250426054003.1: *3* function: parse_ast
-def parse_ast(contents: str) -> ast.AST:
+def parse_ast(contents: str) -> Optional[ast.AST]:
     """
     Parse string s, catching & reporting all exceptions.
     Return the ast node, or None.
@@ -175,7 +175,7 @@ class SemanticCache(SqlitePickleShare):
         self.init_dbtables(self.conn)
 
         # Keys are full, absolute, file names.
-        self.cache: dict[str, Value] = {}
+        self.cache: dict[str, "CacheData"] = {}
 
         def loadz(data: Value) -> Optional[Value]:
             if data:
@@ -205,8 +205,14 @@ class SemanticCache(SqlitePickleShare):
     def _makedirs(self, fn: str, mode: int = 0o777) -> None:
         raise NotImplementedError
 
-    def _walkfiles(self, s: str, pattern: str = None) -> None:
+    def _walkfiles(self, s: str, pattern: Any = None) -> None:
         raise NotImplementedError
+#@+node:ekr.20250427065029.1: ** class CacheData
+class CacheData:
+
+    def __init__(self, mod_time: float, path: str) -> None:
+        self.mod_time = mod_time
+        self.path = path
 #@+node:ekr.20250426053702.1: ** class class_cache
 class class_cache:
     """A class containing all cached data from one Python class."""
