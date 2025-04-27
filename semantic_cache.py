@@ -5,7 +5,6 @@
 #@+<< semantic_cache: imports >>
 #@+node:ekr.20250426051119.1: ** << semantic_cache: imports >>
 # pylint: disable=reimported,wrong-import-position
-#         unused-import
 
 import ast
 import os
@@ -21,7 +20,6 @@ if leo_path not in sys.path:
     sys.path.insert(0, leo_path)
 
 from leo.core import leoGlobals as g
-assert g
 from leo.core.leoCache import SqlitePickleShare
 #@-<< semantic_cache: imports >>
 #@+<< semantic_cache: annotations >>
