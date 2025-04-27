@@ -5,7 +5,6 @@
 #@+<< semantic_cache: imports >>
 #@+node:ekr.20250426051119.1: ** << semantic_cache: imports >>
 # pylint: disable=reimported,wrong-import-position
-
 import ast
 import os
 import pickle
@@ -102,7 +101,6 @@ def main():
     # Startup.
     global cache
     t1 = time.process_time()
-    # db = sqlite3.connect("semantic_cache.db")
     assert g.app is None, repr(g.app)
     assert g.unitTesting is False
     cache = SemanticCache('semantic_cache.db')
@@ -139,7 +137,6 @@ def main():
     print(f"startup: {t2-t1:4.2} sec.")
     print(f"  parse: {t3-t2:4.2} sec.")
     print(f"  total: {t3-t1:4.2} sec.")
-
 #@+node:ekr.20250426054003.1: *3* function: parse_ast
 def parse_ast(contents: str) -> ast.AST:
     """
