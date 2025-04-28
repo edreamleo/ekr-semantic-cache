@@ -92,11 +92,12 @@ def main():
     assert g.app is None, repr(g.app)
     assert g.unitTesting is False
     controller = CacheController()
-    updated_files = controller.analyze()
+    updated_files = controller.get_changed_files()
     if updated_files:
-        controller.update()
+        controller.write_cache()
         controller.commit()
     controller.close()
+    controller.print_stats(updated_files)
 #@+node:ekr.20250426054003.1: *3* function: parse_ast
 def parse_ast(contents: str) -> Optional[ast.AST]:
     """
@@ -166,7 +167,7 @@ class SemanticCache(SqlitePickleShare):
         raise NotImplementedError
 #@+node:ekr.20250427190248.1: ** class CacheController
 class CacheController:
-    """A Wrapper for the SemanticCache."""
+    """The driver class for the semantic caching project."""
 
     #@+others
     #@+node:ekr.20250428033750.1: *3* CacheController.__init__
@@ -180,10 +181,14 @@ class CacheController:
         self.module_dict: dict[str, Optional[Node]] = self.cache.get('module_dict') or {}
         self.mod_time_dict: dict[str, float] = self.cache.get('mod_time_dict') or {}
         t2 = time.process_time()
-        n = len(list(self.module_dict.keys()))
-        print(f"Load {n} cached files in {t2-t1:3.2} sec.")
-    #@+node:ekr.20250427190307.1: *3* CacheController.analyze
-    def analyze(self) -> list[str]:
+
+        # Stats:
+        self.stats: list[tuple[str, float]] = [
+            ('Load', (t2 - t1)),
+        ]
+
+    #@+node:ekr.20250427190307.1: *3* CacheController.get_changed_files
+    def get_changed_files(self) -> list[str]:
         """
         Update the tree and modification file for all new and changed files.
         """
@@ -196,10 +201,11 @@ class CacheController:
             assert os.path.exists(path), repr(path)
             mod_time = os.path.getmtime(path)
             old_mod_time = self.mod_time_dict.get(path, None)
-            if old_mod_time is None or mod_time > old_mod_time:
+            if old_mod_time is None or mod_time > old_mod_time or 'leoCache.py' in path:
                 kind = 'Create' if old_mod_time is None else 'Update'
                 updated_paths.append(path)
-                print(f"{kind} {time.ctime(mod_time):<18} {z}.py")
+                path_s = f"{z}.py"
+                print(f"{kind} {path_s} {time.ctime(mod_time)}")
                 contents = g.readFile(path)
                 tree = parse_ast(contents)
                 self.module_dict[path] = tree
@@ -209,8 +215,7 @@ class CacheController:
                 for i, line in enumerate(lines[:30]):
                     print(f"{i:2} {line.rstrip()}")
         t2 = time.process_time()
-        n = len(updated_paths)
-        print(f"Update {n} of {n_files} files in {t2-t1:3.2} sec.")
+        self.stats.append(('Find changed', t2 - t1))
         return updated_paths
     #@+node:ekr.20250427200712.1: *3* CacheController.commit & close
     def commit(self) -> None:
@@ -228,12 +233,20 @@ class CacheController:
         # g.printObj(list(self.mod_time_dict.keys()), tag='mod_time_dict')
         for key, val in self.mod_time_dict.items():
             print(f"{val:<18} {key}")
-    #@+node:ekr.20250427194628.1: *3* CacheController.update
-    def update(self):
+    #@+node:ekr.20250428071526.1: *3* CacheController.print_stats
+    def print_stats(self, updated_files: list[str]) -> None:
+        n = len(updated_files)
+        print(f"{n} updated file{g.plural(n)}")
+        for key, value in self.stats:
+            print(f"{key:12} {value:3.2} sec.")
+    #@+node:ekr.20250427194628.1: *3* CacheController.write_cache
+    def write_cache(self):
         """Update the persistent cache with all data."""
-        g.trace()
+        t1 = time.process_time()
         self.cache['module_dict'] = self.module_dict
         self.cache['mod_time_dict'] = self.mod_time_dict
+        t2 = time.process_time()
+        self.stats.append(('Write cache', (t2 - t1)))
     #@-others
 #@+node:ekr.20250426053702.1: ** class class_cache
 class class_cache:
