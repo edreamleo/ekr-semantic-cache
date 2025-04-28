@@ -236,9 +236,13 @@ class CacheController:
     #@+node:ekr.20250428071526.1: *3* CacheController.print_stats
     def print_stats(self, updated_files: list[str]) -> None:
         n = len(updated_files)
+        total = 0.0
         print(f"{n} updated file{g.plural(n)}")
         for key, value in self.stats:
-            print(f"{key:12} {value:3.2} sec.")
+            total += value
+            print(f"{key:>12} {value:3.2} sec.")
+        print(f"{'Total':>12} {total:3.2} sec.")
+
     #@+node:ekr.20250427194628.1: *3* CacheController.write_cache
     def write_cache(self):
         """Update the persistent cache with all data."""
