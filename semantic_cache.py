@@ -173,12 +173,15 @@ class CacheController:
     def __init__(self) -> None:
 
         # Load the persistent cache.
+        t1 = time.process_time()
         self.cache = SemanticCache('semantic_cache.db')
 
         # Dictionaries. Keys are full path names.
         self.module_dict: dict[str, Optional[Node]] = self.cache.get('module_dict') or {}
         self.mod_time_dict: dict[str, float] = self.cache.get('mod_time_dict') or {}
-        g.trace('Files in cache:', len(list(self.module_dict.keys())))
+        t2 = time.process_time()
+        n = len(list(self.module_dict.keys()))
+        print(f"Load {n} cached files in {t2-t1:3.2} sec.")
     #@+node:ekr.20250427190307.1: *3* CacheController.analyze
     def analyze(self) -> list[str]:
         """
@@ -206,8 +209,8 @@ class CacheController:
                 for i, line in enumerate(lines[:30]):
                     print(f"{i:2} {line.rstrip()}")
         t2 = time.process_time()
-        print(f"{n_files} total files, updated: {len(updated_paths)}")
-        print(f"  parse: {t2-t1:4.2} sec.")
+        n = len(updated_paths)
+        print(f"Update {n} of {n_files} files in {t2-t1:3.2} sec.")
         return updated_paths
     #@+node:ekr.20250427200712.1: *3* CacheController.commit & close
     def commit(self) -> None:
