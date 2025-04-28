@@ -26,15 +26,6 @@ from leo.core.leoCache import SqlitePickleShare  # type:ignore[import-not-found]
 Node = ast.AST
 Value = Any
 #@-<< semantic_cache: annotations >>
-#@+<< semantic_cache: data >>
-#@+node:ekr.20250427044849.1: ** << semantic_cache: data >>
-# The persistent cache.
-cache: "SemanticCache" = None  # type:ignore[assignment]
-
-# Dictionaries. Keys are full path names.
-module_dict: dict[str, Node] = {}
-mod_time_dict: dict[str, float] = {}
-#@-<< semantic_cache: data >>
 #@+<< semantic_cache: file names >>
 #@+node:ekr.20250426054838.1: ** << semantic_cache: file names >>
 core_path = r'c:\Repos\leo-editor\leo\core'
@@ -98,45 +89,11 @@ def get_fields(node: Node) -> Generator:
     )
 #@+node:ekr.20250426052508.1: *3* function: main
 def main():
-    # Startup.
-    global cache
-    t1 = time.process_time()
-    assert g.app is None, repr(g.app)
-    assert g.unitTesting is False
-    cache = SemanticCache('semantic_cache.db')
-
-    # Analysis
-    t2 = time.process_time()
-    n_files, n_new, n_update = 0, 0, 0
-    for z in core_names:
-        n_files += 1
-        path = f"{core_path}{os.sep}{z}.py"
-        assert os.path.exists(path), repr(path)
-        mod_time = os.path.getmtime(path)
-        old_mod_time = mod_time_dict.get(path, 0.0)
-        if mod_time > old_mod_time:
-            time_s = time.ctime(mod_time)
-            if old_mod_time == 0.0:
-                kind = 'New'
-                n_new += 1
-            else:
-                kind = 'Update'
-                n_update += 1
-            if 0:
-                print(f"{kind:>6}: {time_s:<18} {z}.py")
-            contents = g.readFile(path)
-            tree = parse_ast(contents)
-            module_dict[path] = tree
-            mod_time_dict[path] = mod_time
-        if 0:
-            lines = g.splitlines(dump_ast(tree))
-            for i, line in enumerate(lines[:30]):
-                print(f"{i:2} {line.rstrip()}")
-    t3 = time.process_time()
-    print(f"{n_files} total files, {n_update} updated, {n_new} new")
-    print(f"startup: {t2-t1:4.2} sec.")
-    print(f"  parse: {t3-t2:4.2} sec.")
-    print(f"  total: {t3-t1:4.2} sec.")
+    controller = CacheController()
+    controller.analyze()
+    controller.update()
+    controller.commit()
+    controller.close()
 #@+node:ekr.20250426054003.1: *3* function: parse_ast
 def parse_ast(contents: str) -> Optional[ast.AST]:
     """
@@ -169,13 +126,10 @@ class SemanticCache(SqlitePickleShare):
     #@+node:ekr.20250427053445.1: *3* SemanticCache.__init__
     def __init__(self, root: str) -> None:
         """ctor for the SemanticCache object."""
-        assert os.path.exists(root), repr(root)
+        self.root = root  # For traces.
         dbfile = ':memory:' if g.unitTesting else root
         self.conn = sqlite3.connect(dbfile)
         self.init_dbtables(self.conn)
-
-        # Keys are full, absolute, file names.
-        self.cache: dict[str, "CacheData"] = {}
 
         def loadz(data: Value) -> Optional[Value]:
             if data:
@@ -207,12 +161,71 @@ class SemanticCache(SqlitePickleShare):
 
     def _walkfiles(self, s: str, pattern: Any = None) -> None:
         raise NotImplementedError
-#@+node:ekr.20250427065029.1: ** class CacheData
-class CacheData:
+#@+node:ekr.20250427190248.1: ** class CacheController
+class CacheController:
+    """A Wrapper for the SemanticCache."""
 
-    def __init__(self, mod_time: float, path: str) -> None:
-        self.mod_time = mod_time
-        self.path = path
+    #@+others
+    #@+node:ekr.20250428033750.1: *3* CacheController.__init__
+    def __init__(self) -> None:
+
+        # Load the persistent cache.
+        self.cache = SemanticCache('semantic_cache.db')
+
+        # Dictionaries. Keys are full path names.
+        self.module_dict: dict[str, Optional[Node]] = self.cache.get('module_dict') or {}
+        self.mod_time_dict: dict[str, float] = self.cache.get('mod_time_dict') or {}
+        self.dump()
+    #@+node:ekr.20250427190307.1: *3* CacheController.analyze
+    def analyze(self) -> None:
+        """The main line of the CacheController class."""
+        assert g.app is None, repr(g.app)
+        assert g.unitTesting is False
+        t1 = time.process_time()
+        n_files, n_update = 0, 0
+        for z in core_names:
+            n_files += 1
+            path = f"{core_path}{os.sep}{z}.py"
+            assert os.path.exists(path), repr(path)
+            mod_time = os.path.getmtime(path)
+            old_mod_time = self.mod_time_dict.get(path, None)
+            if old_mod_time is None or mod_time > old_mod_time:
+                n_update += 1
+                print(f"{time.ctime(mod_time):<18} {z}.py")
+                contents = g.readFile(path)
+                tree = parse_ast(contents)
+                self.module_dict[path] = tree
+                self.mod_time_dict[path] = mod_time
+            if 0:
+                lines = g.splitlines(dump_ast(tree))
+                for i, line in enumerate(lines[:30]):
+                    print(f"{i:2} {line.rstrip()}")
+        t2 = time.process_time()
+        print(f"{n_files} total files, updated: {n_update}")
+        print(f"  parse: {t2-t1:4.2} sec.")
+    #@+node:ekr.20250427200712.1: *3* CacheController.commit & close
+    def commit(self) -> None:
+        """Commit the cache."""
+        self.cache.conn.commit()
+
+    def close(self) -> None:
+        """Close the cache."""
+        self.cache.conn.close()
+    #@+node:ekr.20250428034510.1: *3* CacheController.dump
+    def dump(self):
+
+        g.trace(g.caller())
+        # g.printObj(list(self.module_dict.keys()), tag='module_dict')
+        # g.printObj(list(self.mod_time_dict.keys()), tag='mod_time_dict')
+        for key, val in self.mod_time_dict.items():
+            print(f"{val:<18} {key}")
+    #@+node:ekr.20250427194628.1: *3* CacheController.update
+    def update(self):
+        """Update the persistent cache with all data."""
+        self.cache['module_dict'] = self.module_dict
+        self.cache['mod_time_dict'] = self.mod_time_dict
+        self.dump()
+    #@-others
 #@+node:ekr.20250426053702.1: ** class class_cache
 class class_cache:
     """A class containing all cached data from one Python class."""
