@@ -91,13 +91,14 @@ def get_fields(node: Node) -> Generator:
 def main():
     assert g.app is None, repr(g.app)
     assert g.unitTesting is False
-    controller = CacheController()
-    updated_files = controller.get_changed_files()
+    x = CacheController()
+    updated_files = x.get_changed_files()
     if updated_files:
-        controller.write_cache()
-        controller.commit()
-    controller.close()
-    controller.print_stats(updated_files)
+        x.compute_diffs(updated_files)
+        x.write_cache()
+        x.commit()
+    x.close()
+    x.print_stats(updated_files)
 #@+node:ekr.20250426054003.1: *3* function: parse_ast
 def parse_ast(contents: str) -> Optional[ast.AST]:
     """
@@ -187,6 +188,25 @@ class CacheController:
             ('Load', (t2 - t1)),
         ]
 
+    #@+node:ekr.20250427200712.1: *3* CacheController.commit & close
+    def commit(self) -> None:
+        """Commit the cache."""
+        self.cache.conn.commit()
+
+    def close(self) -> None:
+        """Close the cache."""
+        self.cache.conn.close()
+    #@+node:ekr.20250428100117.1: *3* CacheController.compute_diffs
+    def compute_diffs(self, updated_files: list[str]) -> None:
+        pass
+    #@+node:ekr.20250428034510.1: *3* CacheController.dump
+    def dump(self):
+        """Dump the modification times of all paths in the cache."""
+        g.trace(g.caller())
+        # g.printObj(list(self.module_dict.keys()), tag='module_dict')
+        # g.printObj(list(self.mod_time_dict.keys()), tag='mod_time_dict')
+        for key, val in self.mod_time_dict.items():
+            print(f"{val:<18} {key}")
     #@+node:ekr.20250427190307.1: *3* CacheController.get_changed_files
     def get_changed_files(self) -> list[str]:
         """
@@ -217,22 +237,6 @@ class CacheController:
         t2 = time.process_time()
         self.stats.append(('Find changed', t2 - t1))
         return updated_paths
-    #@+node:ekr.20250427200712.1: *3* CacheController.commit & close
-    def commit(self) -> None:
-        """Commit the cache."""
-        self.cache.conn.commit()
-
-    def close(self) -> None:
-        """Close the cache."""
-        self.cache.conn.close()
-    #@+node:ekr.20250428034510.1: *3* CacheController.dump
-    def dump(self):
-        """Dump the modification times of all paths in the cache."""
-        g.trace(g.caller())
-        # g.printObj(list(self.module_dict.keys()), tag='module_dict')
-        # g.printObj(list(self.mod_time_dict.keys()), tag='mod_time_dict')
-        for key, val in self.mod_time_dict.items():
-            print(f"{val:<18} {key}")
     #@+node:ekr.20250428071526.1: *3* CacheController.print_stats
     def print_stats(self, updated_files: list[str]) -> None:
         n = len(updated_files)
@@ -240,9 +244,8 @@ class CacheController:
         print(f"{n} updated file{g.plural(n)}")
         for key, value in self.stats:
             total += value
-            print(f"{key:>12} {value:3.2} sec.")
-        print(f"{'Total':>12} {total:3.2} sec.")
-
+            print(f"{key:>12} {value:.2f} sec.")
+        print(f"{'Total':>12} {total:.2f} sec.")
     #@+node:ekr.20250427194628.1: *3* CacheController.write_cache
     def write_cache(self):
         """Update the persistent cache with all data."""
