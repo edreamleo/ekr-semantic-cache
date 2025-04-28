@@ -89,10 +89,13 @@ def get_fields(node: Node) -> Generator:
     )
 #@+node:ekr.20250426052508.1: *3* function: main
 def main():
+    assert g.app is None, repr(g.app)
+    assert g.unitTesting is False
     controller = CacheController()
-    controller.analyze()
-    controller.update()
-    controller.commit()
+    updated_files = controller.analyze()
+    if updated_files:
+        controller.update()
+        controller.commit()
     controller.close()
 #@+node:ekr.20250426054003.1: *3* function: parse_ast
 def parse_ast(contents: str) -> Optional[ast.AST]:
@@ -175,14 +178,15 @@ class CacheController:
         # Dictionaries. Keys are full path names.
         self.module_dict: dict[str, Optional[Node]] = self.cache.get('module_dict') or {}
         self.mod_time_dict: dict[str, float] = self.cache.get('mod_time_dict') or {}
-        self.dump()
+        g.trace('Files in cache:', len(list(self.module_dict.keys())))
     #@+node:ekr.20250427190307.1: *3* CacheController.analyze
-    def analyze(self) -> None:
-        """The main line of the CacheController class."""
-        assert g.app is None, repr(g.app)
-        assert g.unitTesting is False
+    def analyze(self) -> list[str]:
+        """
+        Update the tree and modification file for all new and changed files.
+        """
         t1 = time.process_time()
-        n_files, n_update = 0, 0
+        updated_paths: list[str] = []
+        n_files = 0
         for z in core_names:
             n_files += 1
             path = f"{core_path}{os.sep}{z}.py"
@@ -190,8 +194,9 @@ class CacheController:
             mod_time = os.path.getmtime(path)
             old_mod_time = self.mod_time_dict.get(path, None)
             if old_mod_time is None or mod_time > old_mod_time:
-                n_update += 1
-                print(f"{time.ctime(mod_time):<18} {z}.py")
+                kind = 'Create' if old_mod_time is None else 'Update'
+                updated_paths.append(path)
+                print(f"{kind} {time.ctime(mod_time):<18} {z}.py")
                 contents = g.readFile(path)
                 tree = parse_ast(contents)
                 self.module_dict[path] = tree
@@ -201,8 +206,9 @@ class CacheController:
                 for i, line in enumerate(lines[:30]):
                     print(f"{i:2} {line.rstrip()}")
         t2 = time.process_time()
-        print(f"{n_files} total files, updated: {n_update}")
+        print(f"{n_files} total files, updated: {len(updated_paths)}")
         print(f"  parse: {t2-t1:4.2} sec.")
+        return updated_paths
     #@+node:ekr.20250427200712.1: *3* CacheController.commit & close
     def commit(self) -> None:
         """Commit the cache."""
@@ -213,7 +219,7 @@ class CacheController:
         self.cache.conn.close()
     #@+node:ekr.20250428034510.1: *3* CacheController.dump
     def dump(self):
-
+        """Dump the modification times of all paths in the cache."""
         g.trace(g.caller())
         # g.printObj(list(self.module_dict.keys()), tag='module_dict')
         # g.printObj(list(self.mod_time_dict.keys()), tag='mod_time_dict')
@@ -222,9 +228,9 @@ class CacheController:
     #@+node:ekr.20250427194628.1: *3* CacheController.update
     def update(self):
         """Update the persistent cache with all data."""
+        g.trace()
         self.cache['module_dict'] = self.module_dict
         self.cache['mod_time_dict'] = self.mod_time_dict
-        self.dump()
     #@-others
 #@+node:ekr.20250426053702.1: ** class class_cache
 class class_cache:
