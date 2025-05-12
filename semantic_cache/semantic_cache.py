@@ -1,5 +1,5 @@
 #@+leo-ver=5-thin
-#@+node:ekr.20250426050140.1: * @file semantic_cache.py
+#@+node:ekr.20250426050140.1: * @file semantic_cache/semantic_cache.py
 """The main program for the semantic cacher"""
 #@+<< semantic_cache: imports >>
 #@+node:ekr.20250426051119.1: ** << semantic_cache: imports >>
