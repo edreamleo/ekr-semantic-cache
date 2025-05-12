@@ -1,1 +1,1 @@
-# ekr-semantic-cache/tests/init.py
+# ekr-semantic-cache/tests/__init__.py

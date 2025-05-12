@@ -5,11 +5,14 @@ from unittest import TestCase
 from leo.core import leoGlobals as g
 assert g
 
-class TestCache(TestCase):
+#@+others
+#@+node:ekr.20250512073231.1: ** class CacheTests
+class CacheTests(TestCase):
     #@+others
-    #@+node:ekr.20250512062255.1: ** TC.test_import
-    def test_dummy(self):
-        from test import TestCache
-        assert TestCache
+    #@+node:ekr.20250512062255.1: *3* CacheTests.test_import
+    def test_import(self):
+        from unittest import TestCase  # pylint: disable=reimported
+        assert TestCase is not None
     #@-others
+#@-others
 #@-leo
