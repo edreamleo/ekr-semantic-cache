@@ -15,8 +15,6 @@ class CacheTests(TestCase):
     def test_import(self):
         assert TestCase is not None
     #@+node:ekr.20250514060210.1: *3* CacheTests.test_times
-    #@@nobeautify
-
     def test_times(self):
         # Report various times.
         from src.semantic_cache import core_path, core_names
