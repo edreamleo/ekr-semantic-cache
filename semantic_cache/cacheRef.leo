@@ -1337,11 +1337,7 @@
 </v>
 </v>
 </v>
-</v>
-<v t="ekr.20250426050131.1"><vh>--- files</vh>
-<v t="ekr.20250512055230.1"><vh>@clean setup.cfg </vh></v>
-<v t="ekr.20250426050140.1"><vh>@file src/semantic_cache.py</vh></v>
-<v t="ekr.20250512061658.1"><vh>@file tests/test.py</vh></v>
+<v t="ekr.20250426052508.1"><vh>function: main</vh></v>
 </v>
 <v t="ekr.20250426191746.1"><vh>*** To do</vh>
 <v t="ekr.20250501074230.1"><vh>--- messages.py</vh>
@@ -1359,16 +1355,12 @@
 </v>
 </v>
 </v>
-<v t="ekr.20250501074906.1"><vh>--- classes</vh>
-<v t="ekr.20250427190248.1"><vh>class CacheController</vh>
-<v t="ekr.20250428033750.1"><vh>CacheController.__init__</vh></v>
-<v t="ekr.20250427200712.1"><vh>CacheController.commit &amp; close</vh></v>
-<v t="ekr.20250428100117.1"><vh>CacheController.compute_diffs</vh></v>
-<v t="ekr.20250428034510.1"><vh>CacheController.dump</vh></v>
-<v t="ekr.20250427190307.1"><vh>CacheController.get_changed_files</vh></v>
-<v t="ekr.20250428071526.1"><vh>CacheController.print_stats</vh></v>
-<v t="ekr.20250427194628.1"><vh>CacheController.write_cache</vh></v>
+<v t="ekr.20250426050131.1"><vh>--- files</vh>
+<v t="ekr.20250512055230.1"><vh>@clean ../setup.cfg </vh></v>
+<v t="ekr.20250426050140.1"><vh>@file src/semantic_cache.py</vh></v>
+<v t="ekr.20250512061658.1"><vh>@file tests/test.py</vh></v>
 </v>
+<v t="ekr.20250501074906.1"><vh>--- classes</vh>
 <v t="ekr.20250430053636.61"></v>
 <v t="ekr.20250427052951.1"><vh>class SemanticCache(SqlitePickleShare)</vh>
 <v t="ekr.20250427053445.1"><vh>SemanticCache.__init__</vh></v>
@@ -1377,11 +1369,22 @@
 <v t="ekr.20250512075040.1"><vh>--- testing</vh>
 <v t="ekr.20250512073231.1"><vh>class CacheTests</vh>
 <v t="ekr.20250512062255.1"><vh>CacheTests.test_import</vh></v>
+<v t="ekr.20250514060210.1"><vh>CacheTests.test_times</vh></v>
 </v>
-<v t="ekr.20250512062255.1"></v>
-<v t="ekr.20250512061621.1"></v>
 </v>
-<v t="ekr.20250426052508.1"><vh>function: main</vh></v>
+<v t="ekr.20250427190248.1"><vh>class CacheController</vh>
+<v t="ekr.20250428033750.1"><vh>CacheController.__init__</vh></v>
+<v t="ekr.20250427200712.1"><vh>CacheController.commit &amp; close</vh></v>
+<v t="ekr.20250428100117.1"><vh>CacheController.compute_diffs</vh></v>
+<v t="ekr.20250428034510.1"><vh>CacheController.dump</vh></v>
+<v t="ekr.20250427190307.1"><vh>CacheController.get_changed_files</vh></v>
+<v t="ekr.20250514055617.1"><vh>CacheController.main (entry)</vh></v>
+<v t="ekr.20250428071526.1"><vh>CacheController.print_stats</vh></v>
+<v t="ekr.20250427194628.1"><vh>CacheController.write_cache</vh></v>
+</v>
+<v t="ekr.20250427190307.1"></v>
+<v t="ekr.20250514055617.1"></v>
+<v t="ekr.20250514060210.1"></v>
 </vnodes>
 <tnodes>
 <t tx="ekr.20250426044347.1"></t>
@@ -7537,16 +7540,7 @@ if value in ('from', 'import') and not prev_is_yield:
 </t>
 <t tx="ekr.20250426050131.1"></t>
 <t tx="ekr.20250426052508.1">def main():
-    assert g.app is None, repr(g.app)
-    assert g.unitTesting is False
-    x = CacheController()
-    updated_files = x.get_changed_files()
-    if updated_files:
-        x.compute_diffs(updated_files)
-        x.write_cache()
-        x.commit()
-    x.close()
-    x.print_stats(updated_files)
+    CacheController().main()
 </t>
 <t tx="ekr.20250426191746.1">@language rest
 
@@ -17729,24 +17723,23 @@ extend-ignore =
 import os
 
 g.cls()
-os.chdir(r'C:\Repos\ekr-semantic-cache\src')
+os.chdir(r'C:\Repos\ekr-semantic-cache\semantic_cache\src')
 g.execute_shell_commands([
     # 'dir',
     "python semantic_cache.py"
 ])
 print('Done')  # , os.getcwd())</t>
-<t tx="ekr.20250512061621.1">"""Run all unittests"""
+<t tx="ekr.20250512061621.1">"""Run all unittests in the tests/test.py"""
 import os
 
 g.cls()
-os.chdir(r'C:\Repos\ekr-semantic-cache')
+os.chdir(r'C:\Repos\ekr-semantic-cache\semantic_cache')
 g.execute_shell_commands([
     "python -m unittest --verbose tests.test"
 ])
 print('Done')
 </t>
 <t tx="ekr.20250512062255.1">def test_import(self):
-    from unittest import TestCase  # pylint: disable=reimported
     assert TestCase is not None
 </t>
 <t tx="ekr.20250512071928.1"></t>
@@ -17754,5 +17747,48 @@ print('Done')
     @others
 </t>
 <t tx="ekr.20250512075040.1"></t>
+<t tx="ekr.20250514055617.1">def main(self):
+    assert g.app is None, repr(g.app)
+    assert g.unitTesting is False
+    updated_files = self.get_changed_files()
+    if updated_files:
+        self.compute_diffs(updated_files)
+        self.write_cache()
+        self.commit()
+    self.close()
+    self.print_stats(updated_files)
+</t>
+<t tx="ekr.20250514060210.1">def test_times(self):
+    # Report various times.
+    from src.semantic_cache import core_path, core_names
+    from src.semantic_cache import parse_ast
+    assert core_path and core_names and parse_ast
+    return  ### Changed.
+    t1 = time.process_time()
+    updated_paths: list[str] = []
+    n_files = 0
+    for z in core_names:
+        n_files += 1
+        path = f"{core_path}{os.sep}{z}.py"
+        assert os.path.exists(path), repr(path)
+        mod_time = os.path.getmtime(path)
+        old_mod_time = self.mod_time_dict.get(path, None)
+        if old_mod_time is None or mod_time &gt; old_mod_time or 'leoCache.py' in path:
+            kind = 'Create' if old_mod_time is None else 'Update'
+            updated_paths.append(path)
+            path_s = f"{z}.py"
+            print(f"{kind} {path_s} {time.ctime(mod_time)}")
+            contents = g.readFile(path)
+            tree = parse_ast(contents)
+            self.module_dict[path] = tree
+            self.mod_time_dict[path] = mod_time
+        # if 0:
+            # lines = g.splitlines(dump_ast(tree))
+            # for i, line in enumerate(lines[:30]):
+                # print(f"{i:2} {line.rstrip()}")
+    t2 = time.process_time()
+    self.stats.append(('Find changed', t2 - t1))
+    return updated_paths
+</t>
 </tnodes>
 </leo_file>
