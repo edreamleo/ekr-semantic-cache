@@ -22,7 +22,7 @@ class CacheTests(TestCase):
         from src.semantic_cache import core_path, core_names
         from src.semantic_cache import parse_ast
         assert core_path and core_names and parse_ast
-        return  ###
+        return  ### Changed.
         t1 = time.process_time()
         updated_paths: list[str] = []
         n_files = 0
