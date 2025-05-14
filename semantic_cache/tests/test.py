@@ -1,6 +1,7 @@
 #@+leo-ver=5-thin
 #@+node:ekr.20250512061658.1: * @file tests/test.py
 """Unit tests the ekr-semantic-cache project"""
+import ast
 import os
 import time
 from unittest import TestCase
@@ -19,33 +20,38 @@ class CacheTests(TestCase):
         # Report various times.
         from src.controller import core_path, core_names
         from src.controller import parse_ast
-        assert core_path and core_names and parse_ast
-        return  ### Changed.
-        t1 = time.process_time()
-        updated_paths: list[str] = []
-        n_files = 0
-        for z in core_names:
-            n_files += 1
-            path = f"{core_path}{os.sep}{z}.py"
+        from src.controller import CacheController
+        x = CacheController()
+
+        # Precheck.
+        paths = [f"{core_path}{os.sep}{z}.py" for z in core_names]
+        for path in paths:
             assert os.path.exists(path), repr(path)
-            mod_time = os.path.getmtime(path)
-            old_mod_time = self.mod_time_dict.get(path, None)
-            if old_mod_time is None or mod_time > old_mod_time or 'leoCache.py' in path:
-                kind = 'Create' if old_mod_time is None else 'Update'
-                updated_paths.append(path)
-                path_s = f"{z}.py"
-                print(f"{kind} {path_s} {time.ctime(mod_time)}")
-                contents = g.readFile(path)
-                tree = parse_ast(contents)
-                self.module_dict[path] = tree
-                self.mod_time_dict[path] = mod_time
-            # if 0:
-                # lines = g.splitlines(dump_ast(tree))
-                # for i, line in enumerate(lines[:30]):
-                    # print(f"{i:2} {line.rstrip()}")
-        t2 = time.process_time()
-        self.stats.append(('Find changed', t2 - t1))
-        return updated_paths
+
+        # Time to get all modification times.
+        t1 = time.perf_counter()
+        mod_time_dict: dict[str, float] = {}
+        for path in paths:
+            mod_time_dict[path] = os.path.getmtime(path)
+
+        # Time to parse all files.
+        t2 = time.perf_counter()
+        contents_dict: dict[str, str] = {}
+        for path in paths:
+            contents_dict[path] = g.readFile(path)
+
+        # Time to parse all files.
+        t3 = time.perf_counter()
+        tree_dict: dict[path, ast.AST] = {}
+        for path in paths:
+            tree_dict[path] = parse_ast(contents_dict[path])
+
+        # Totals.
+        t4 = time.perf_counter()
+        x.stats.append(('Read all mod times', t2 - t1))
+        x.stats.append(('Read all files', t3 - t2))
+        x.stats.append(('Parse all files', t4 - t3))
+        x.print_stats(paths)
     #@-others
 #@-others
 #@-leo
