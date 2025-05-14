@@ -17,8 +17,8 @@ class CacheTests(TestCase):
     #@+node:ekr.20250514060210.1: *3* CacheTests.test_times
     def test_times(self):
         # Report various times.
-        from src.semantic_cache import core_path, core_names
-        from src.semantic_cache import parse_ast
+        from src.controller import core_path, core_names
+        from src.controller import parse_ast
         assert core_path and core_names and parse_ast
         return  ### Changed.
         t1 = time.process_time()
