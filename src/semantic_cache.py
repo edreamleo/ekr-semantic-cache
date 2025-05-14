@@ -86,18 +86,6 @@ def get_fields(node: Node) -> Generator:
         (a, b) for a, b in ast.iter_fields(node)
             if a not in ['ctx',] and b not in (None, [])
     )
-#@+node:ekr.20250426052508.1: *3* function: main
-def main():
-    assert g.app is None, repr(g.app)
-    assert g.unitTesting is False
-    x = CacheController()
-    updated_files = x.get_changed_files()
-    if updated_files:
-        x.compute_diffs(updated_files)
-        x.write_cache()
-        x.commit()
-    x.close()
-    x.print_stats(updated_files)
 #@+node:ekr.20250426054003.1: *3* function: parse_ast
 def parse_ast(contents: str) -> Optional[ast.AST]:
     """
@@ -236,6 +224,17 @@ class CacheController:
         t2 = time.process_time()
         self.stats.append(('Find changed', t2 - t1))
         return updated_paths
+    #@+node:ekr.20250514055617.1: *3* CacheController.main (entry)
+    def main(self):
+        assert g.app is None, repr(g.app)
+        assert g.unitTesting is False
+        updated_files = self.get_changed_files()
+        if updated_files:
+            self.compute_diffs(updated_files)
+            self.write_cache()
+            self.commit()
+        self.close()
+        self.print_stats(updated_files)
     #@+node:ekr.20250428071526.1: *3* CacheController.print_stats
     def print_stats(self, updated_files: list[str]) -> None:
         n = len(updated_files)
@@ -263,7 +262,7 @@ class module_cache:
 #@-others
 
 if __name__ == "__main__":
-    main()
+    CacheController().main()
 
 #@@language python
 #@@tabwidth -4

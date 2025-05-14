@@ -11,7 +11,6 @@ class CacheTests(TestCase):
     #@+others
     #@+node:ekr.20250512062255.1: *3* CacheTests.test_import
     def test_import(self):
-        from unittest import TestCase  # pylint: disable=reimported
         assert TestCase is not None
     #@-others
 #@-others
