@@ -8,7 +8,7 @@
 <vnodes>
 <v t="ekr.20250426044347.1"><vh>Startup</vh>
 <v t="ekr.20250426044445.1"><vh>@button backup</vh></v>
-<v t="ekr.20250427065404.1"><vh>@button check</vh></v>
+<v t="ekr.20250427065404.1"><vh>@@@button check</vh></v>
 <v t="ekr.20250512060544.1"><vh>@button run</vh></v>
 <v t="ekr.20250512061621.1"><vh>@button test</vh></v>
 <v t="ekr.20250514145634.1"><vh>@settings</vh>
@@ -25,6 +25,7 @@
 </v>
 <v t="ekr.20250426050131.1"><vh>--- files</vh>
 <v t="ekr.20250512055230.1"><vh>@clean ../setup.cfg </vh></v>
+<v t="ekr.20250515085346.1"><vh>@edit ../../.mypy.ini</vh></v>
 <v t="ekr.20250426050140.1"><vh>@file src/controller.py</vh></v>
 <v t="ekr.20250512061658.1"><vh>@file tests/test.py</vh></v>
 </v>
@@ -117,18 +118,6 @@
 <v t="ekr.20250428071526.1"><vh>CC.print_stats</vh></v>
 </v>
 <v t="ekr.20250426191746.1"><vh>*** To do</vh></v>
-<v t="ekr.20250512073231.1"></v>
-<v t="ekr.20250427190248.1"><vh>class CacheController</vh>
-<v t="ekr.20250428033750.1"><vh>CC.__init__</vh></v>
-<v t="ekr.20250427200712.1"><vh>CC.commit &amp; close</vh></v>
-<v t="ekr.20250428100117.1"><vh>CC.do_semanctics (To do)</vh></v>
-<v t="ekr.20250428034510.1"><vh>CC.dump_cache</vh></v>
-<v t="ekr.20250427190307.1"></v>
-<v t="ekr.20250514055617.1"></v>
-<v t="ekr.20250428071526.1"></v>
-<v t="ekr.20250427194628.1"><vh>CC.write_cache (revise??)</vh></v>
-</v>
-<v t="ekr.20250514055617.1"></v>
 </vnodes>
 <tnodes>
 <t tx="ekr.20250426044347.1"></t>
@@ -163,6 +152,8 @@ if 1:
 print('Done')</t>
 <t tx="ekr.20250426050131.1"></t>
 <t tx="ekr.20250426191746.1">@language rest
+
+Having a cache is the only way to do diffs!
 
 Investigate diffing Ast's.
 - Create an artificial diff.
@@ -247,11 +238,6 @@ g.execute_shell_commands([
     f"python -m pylint --rcfile {rc_file} {path}",
 ])
 print('Done')</t>
-<t tx="ekr.20250427190248.1">class CacheController:
-    """The driver class for the semantic caching project."""
-
-    @others
-</t>
 <t tx="ekr.20250427190307.1">def get_changed_files(self) -&gt; list[str]:
     """
     Update the tree and modification file for all new and changed files.
@@ -277,63 +263,6 @@ print('Done')</t>
         g.printObj(updated_paths, tag='Updated files')
     return updated_paths
 </t>
-<t tx="ekr.20250427194628.1">def write_cache(self):
-    """Update the persistent cache with all data."""
-
-    # All keys are full path names.
-    t1 = time.perf_counter()
-    self.cache['module_dict'] = self.module_dict
-    self.cache['mod_time_dict'] = self.mod_time_dict
-    t2 = time.perf_counter()
-    self.stats.append(('Write cache', (t2 - t1)))
-</t>
-<t tx="ekr.20250427200712.1">def commit(self) -&gt; None:
-    """Commit the cache."""
-    t1 = time.perf_counter()
-    self.cache.conn.commit()
-    t2 = time.perf_counter()
-    self.stats.append(('Commit cache', t2 - t1))
-
-def close(self) -&gt; None:
-    """Close the cache."""
-    t1 = time.perf_counter()
-    self.cache.conn.close()
-    t2 = time.perf_counter()
-    self.stats.append(('Close cache', t2 - t1))
-</t>
-<t tx="ekr.20250428033750.1">def __init__(self) -&gt; None:
-
-    # Set the global start time.
-    self.start_time = t1 = time.perf_counter()
-
-    # Load the persistent cache.
-    self.cache = SemanticCache('semantic_cache.db')
-
-    # The list of all paths to be considered.
-    self.paths: list[str] = [
-        f"{core_path}{os.sep}{z}.py"
-        for z in core_names if os.path.exists(z)
-    ]
-
-    # Dictionaries. Keys are full path names.
-    self.module_dict: dict[str, Optional[Node]] = self.cache.get('module_dict') or {}
-    self.mod_time_dict: dict[str, float] = self.cache.get('mod_time_dict') or {}
-
-    # Stats:
-    t2 = time.perf_counter()
-    self.stats: list[tuple[str, float]] = [
-        ('Load cache', (t2 - t1)),
-    ]
-
-</t>
-<t tx="ekr.20250428034510.1">def dump_cache(self):
-    """Dump the contents of the data to be written to the cache."""
-
-    # Dump the modification times
-    print('Dump of mod_time_dict...')
-    for key, val in self.mod_time_dict.items():
-        print(f"{val:&lt;18} {key}")
-</t>
 <t tx="ekr.20250428071526.1">def print_stats(self, updated_files: list[str]) -&gt; None:
 
     # Get the max length of all keys.
@@ -351,14 +280,6 @@ def close(self) -&gt; None:
     print(f"{n} updated file{g.plural(n)}")
     for key, value in self.stats:
         print(f"{pad(key)} {value:.2f} sec.")
-</t>
-<t tx="ekr.20250428100117.1">def do_semantics(self, updated_files: list[str]) -&gt; None:
-    """
-    Do all semantics on updated files:
-    - Recompute diffs,
-    - Recompute gives/takes (defs/refs) data.
-    """
-    pass
 </t>
 <t tx="ekr.20250430053636.100">@property
 def futuresAllowed(self):
@@ -2016,14 +1937,16 @@ print('Done')
 <t tx="ekr.20250514055617.1">def main(self) -&gt; None:
     assert g.app is None, repr(g.app)
     assert g.unitTesting is False
+    t1 = time.perf_counter()
+    self.init()
     updated_files = self.get_changed_files()
     if updated_files:
         self.do_semantics(updated_files)
         self.write_cache()
-        self.commit()
-    self.close()
+        self.commit_cache()
+    self.close_cache()
     t2 = time.perf_counter()
-    self.stats.append(('Total', t2 - self.start_time))
+    self.stats.append(('Total', t2 - t1))
     self.print_stats(updated_files)
 </t>
 <t tx="ekr.20250514060210.1">def test_times(self):

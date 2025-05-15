@@ -162,7 +162,7 @@ class CacheController:
     def __init__(self) -> None:
 
         # The persistent cache.
-        self.cache: SemanticCache = None  # type:ignore
+        self.cache: Any = None
 
         # The list of all paths to be considered.
         self.paths: list[str] = []
@@ -181,37 +181,7 @@ class CacheController:
         - Recompute gives/takes (defs/refs) data.
         """
         pass
-    #@+node:ekr.20250514055617.1: *3* CC.main (entry) & helpers
-    def main(self) -> None:
-        assert g.app is None, repr(g.app)
-        assert g.unitTesting is False
-        t1 = time.perf_counter()
-        self.init()
-        updated_files = self.get_changed_files()
-        if updated_files:
-            self.do_semantics(updated_files)
-            self.write_cache()
-            self.commit_cache()
-        self.close_cache()
-        t2 = time.perf_counter()
-        self.stats.append(('Total', t2 - t1))
-        self.print_stats(updated_files)
-    #@+node:ekr.20250515083553.1: *4* CC.init
-    def init(self) -> None:
-
-        # The list of all paths to be considered.
-        self.paths = [
-            f"{core_path}{os.sep}{z}.py"
-            for z in core_names if os.path.exists(z)
-        ]
-
-        # Load the cache.
-        self.load_cache()
-
-        # Load dictionaries from the cache.
-        self.module_dict = self.cache.get('module_dict') or {}
-        self.mod_time_dict = self.cache.get('mod_time_dict') or {}
-    #@+node:ekr.20250427190307.1: *4* CC.get_changed_files
+    #@+node:ekr.20250427190307.1: *3* CC.get_changed_files
     def get_changed_files(self) -> list[str]:
         """
         Update the tree and modification file for all new and changed files.
@@ -236,6 +206,36 @@ class CacheController:
         if trace and updated_paths:
             g.printObj(updated_paths, tag='Updated files')
         return updated_paths
+    #@+node:ekr.20250515083553.1: *3* CC.init
+    def init(self) -> None:
+
+        # The list of all paths to be considered.
+        self.paths = [
+            f"{core_path}{os.sep}{z}.py"
+            for z in core_names if os.path.exists(z)
+        ]
+
+        # Load the cache.
+        self.load_cache()
+
+        # Load dictionaries from the cache.
+        self.module_dict = self.cache.get('module_dict') or {}
+        self.mod_time_dict = self.cache.get('mod_time_dict') or {}
+    #@+node:ekr.20250514055617.1: *3* CC.main (entry)
+    def main(self) -> None:
+        assert g.app is None, repr(g.app)
+        assert g.unitTesting is False
+        t1 = time.perf_counter()
+        self.init()
+        updated_files = self.get_changed_files()
+        if updated_files:
+            self.do_semantics(updated_files)
+            self.write_cache()
+            self.commit_cache()
+        self.close_cache()
+        t2 = time.perf_counter()
+        self.stats.append(('Total', t2 - t1))
+        self.print_stats(updated_files)
     #@+node:ekr.20250427200712.1: *3* CC: Cache methods
     #@+node:ekr.20250515084324.1: *4* CC.commit_cache
     def commit_cache(self) -> None:
