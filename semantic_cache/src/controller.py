@@ -161,8 +161,10 @@ class CacheController:
     #@+node:ekr.20250428033750.1: *3* CC.__init__
     def __init__(self) -> None:
 
+        # Set the global start time.
+        self.start_time = t1 = time.perf_counter()
+
         # Load the persistent cache.
-        t1 = time.perf_counter()
         self.cache = SemanticCache('semantic_cache.db')
 
         # The list of all paths to be considered.
@@ -184,11 +186,17 @@ class CacheController:
     #@+node:ekr.20250427200712.1: *3* CC.commit & close
     def commit(self) -> None:
         """Commit the cache."""
+        t1 = time.perf_counter()
         self.cache.conn.commit()
+        t2 = time.perf_counter()
+        self.stats.append(('Commit cache', t2 - t1))
 
     def close(self) -> None:
         """Close the cache."""
+        t1 = time.perf_counter()
         self.cache.conn.close()
+        t2 = time.perf_counter()
+        self.stats.append(('Close cache', t2 - t1))
     #@+node:ekr.20250428100117.1: *3* CC.do_semanctics (To do)
     def do_semantics(self, updated_files: list[str]) -> None:
         """
@@ -239,13 +247,15 @@ class CacheController:
             self.do_semantics(updated_files)
             self.write_cache()
             self.commit()
-            self.close()
+        self.close()
+        t2 = time.perf_counter()
+        self.stats.append(('Total', t2 - self.start_time))
         self.print_stats(updated_files)
     #@+node:ekr.20250428071526.1: *3* CC.print_stats
     def print_stats(self, updated_files: list[str]) -> None:
-        total = 0.0
+
         # Get the max length of all keys.
-        pad_n = 5  # For 'Total'
+        pad_n = 5  # A reasonable default.
         for key, value in self.stats:
             pad_n = max(pad_n, len(key))
 
@@ -258,9 +268,7 @@ class CacheController:
         print('')
         print(f"{n} updated file{g.plural(n)}")
         for key, value in self.stats:
-            total += value
             print(f"{pad(key)} {value:.2f} sec.")
-        print(f"{pad('Total')} {total:.2f} sec.")
     #@+node:ekr.20250427194628.1: *3* CC.write_cache (revise??)
     def write_cache(self):
         """Update the persistent cache with all data."""
