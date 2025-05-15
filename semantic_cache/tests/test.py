@@ -51,6 +51,7 @@ class CacheTests(TestCase):
         x.stats.append(('Read all mod times', t2 - t1))
         x.stats.append(('Read all files', t3 - t2))
         x.stats.append(('Parse all files', t4 - t3))
+        # x.stats.append(('Test', 2.61))
         x.print_stats(paths)
     #@-others
 #@-others

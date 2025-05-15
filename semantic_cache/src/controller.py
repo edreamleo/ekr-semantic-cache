@@ -158,7 +158,7 @@ class CacheController:
     """The driver class for the semantic caching project."""
 
     #@+others
-    #@+node:ekr.20250428033750.1: *3* CacheController.__init__
+    #@+node:ekr.20250428033750.1: *3* CC.__init__
     def __init__(self) -> None:
 
         # Load the persistent cache.
@@ -175,7 +175,7 @@ class CacheController:
             ('Load cache', (t2 - t1)),
         ]
 
-    #@+node:ekr.20250427200712.1: *3* CacheController.commit & close
+    #@+node:ekr.20250427200712.1: *3* CC.commit & close
     def commit(self) -> None:
         """Commit the cache."""
         self.cache.conn.commit()
@@ -183,10 +183,15 @@ class CacheController:
     def close(self) -> None:
         """Close the cache."""
         self.cache.conn.close()
-    #@+node:ekr.20250428100117.1: *3* CacheController.compute_diffs
-    def compute_diffs(self, updated_files: list[str]) -> None:
+    #@+node:ekr.20250428100117.1: *3* CC.do_semanctics (To do)
+    def do_semantics(self, updated_files: list[str]) -> None:
+        """
+        Do all semantics on updated files:
+        - Recompute diffs,
+        - Recompute gives/takes (defs/refs) data.
+        """
         pass
-    #@+node:ekr.20250428034510.1: *3* CacheController.dump
+    #@+node:ekr.20250428034510.1: *3* CC.dump
     def dump(self):
         """Dump the modification times of all paths in the cache."""
         g.trace(g.caller())
@@ -194,7 +199,7 @@ class CacheController:
         # g.printObj(list(self.mod_time_dict.keys()), tag='mod_time_dict')
         for key, val in self.mod_time_dict.items():
             print(f"{val:<18} {key}")
-    #@+node:ekr.20250427190307.1: *3* CacheController.get_changed_files
+    #@+node:ekr.20250427190307.1: *3* CC.get_changed_files
     def get_changed_files(self) -> list[str]:
         """
         Update the tree and modification file for all new and changed files.
@@ -208,7 +213,7 @@ class CacheController:
             assert os.path.exists(path), repr(path)
             mod_time = os.path.getmtime(path)
             old_mod_time = self.mod_time_dict.get(path, None)
-            if old_mod_time is None or mod_time > old_mod_time or 'leoCache.py' in path:
+            if old_mod_time is None or mod_time > old_mod_time:
                 kind = 'Create' if old_mod_time is None else 'Update'
                 updated_paths.append(path)
                 path_s = f"{z}.py"
@@ -217,46 +222,42 @@ class CacheController:
                 tree = parse_ast(contents)
                 self.module_dict[path] = tree
                 self.mod_time_dict[path] = mod_time
-            if 0:
-                lines = g.splitlines(dump_ast(tree))
-                for i, line in enumerate(lines[:30]):
-                    print(f"{i:2} {line.rstrip()}")
         t2 = time.perf_counter()
         self.stats.append(('Find changed', t2 - t1))
+        # g.printObj(updated_paths)
         return updated_paths
-    #@+node:ekr.20250514055617.1: *3* CacheController.main (entry)
+    #@+node:ekr.20250514055617.1: *3* CC.main (entry)
     def main(self):
         assert g.app is None, repr(g.app)
         assert g.unitTesting is False
         updated_files = self.get_changed_files()
         if updated_files:
-            self.compute_diffs(updated_files)
+            self.do_semantics(updated_files)
             self.write_cache()
             self.commit()
-        self.close()
+            self.close()
         self.print_stats(updated_files)
-    #@+node:ekr.20250428071526.1: *3* CacheController.print_stats
+    #@+node:ekr.20250428071526.1: *3* CC.print_stats
     def print_stats(self, updated_files: list[str]) -> None:
-        n = len(updated_files)
         total = 0.0
-        print(f"{n} file{g.plural(n)}")
-
         # Get the max length of all keys.
-        n = 5  # For 'Total'
+        pad_n = 5  # For 'Total'
         for key, value in self.stats:
-            n = max(n, len(key))
+            pad_n = max(pad_n, len(key))
 
         def pad(key: str) -> str:
-            pad_s = max(0, n - len(key))
+            pad_s = max(0, pad_n - len(key))
             return pad_s * ' ' + key
 
         # Print the stats.
+        n = len(updated_files)
+        print('')
+        print(f"{n} updated file{g.plural(n)}")
         for key, value in self.stats:
             total += value
-            # print(f"{key:>12} {value:.2f} sec.")
             print(f"{pad(key)} {value:.2f} sec.")
         print(f"{pad('Total')} {total:.2f} sec.")
-    #@+node:ekr.20250427194628.1: *3* CacheController.write_cache
+    #@+node:ekr.20250427194628.1: *3* CC.write_cache (revise??)
     def write_cache(self):
         """Update the persistent cache with all data."""
         t1 = time.perf_counter()
