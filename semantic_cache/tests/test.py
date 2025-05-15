@@ -7,6 +7,7 @@ import time
 from typing import Union
 from unittest import TestCase
 from leo.core import leoGlobals as g
+from src.controller import CacheController, parse_ast
 assert g
 
 #@+others
@@ -16,22 +17,23 @@ class CacheTests(TestCase):
     def setUp(self) -> None:
         super().setUp()
         g.unitTesting = True
+        self.cc = CacheController()
+        self.cc.init()
 
     def tearDown(self) -> None:
         super().tearDown()
         g.unitTesting = False
+        self.cc = None
 
     #@+others
     #@+node:ekr.20250514060210.1: *3* CT.test_times
     def test_times(self) -> None:
 
         self.skipTest('Passed')
+        x = self.cc
 
         # Report various times.
         from src.controller import core_path, core_names
-        from src.controller import parse_ast
-        from src.controller import CacheController
-        x = CacheController()
 
         # Precheck.
         paths = [f"{core_path}{os.sep}{z}.py" for z in core_names]
@@ -66,15 +68,10 @@ class CacheTests(TestCase):
     #@+node:ekr.20250515090937.1: *3* CT.test_semantics
     def test_semantics(self) -> None:
 
+        x = self.cc
         directory = os.path.dirname(__file__)
         path = os.path.join(directory, 'dummy_test_program.py')
         assert os.path.exists(path)
-        sfn = g.shortFileName(path)
-
-        from src.controller import CacheController, parse_ast
-        x = CacheController()
-        x.init()
-        x.clear_cache()
 
         # Set old_tree_dict from the *old* contents.
         old_contents = g.readFile(path)
