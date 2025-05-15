@@ -4,6 +4,7 @@
 import ast
 import os
 import time
+from typing import Union
 from unittest import TestCase
 from leo.core import leoGlobals as g
 assert g
@@ -13,10 +14,10 @@ assert g
 class CacheTests(TestCase):
     #@+others
     #@+node:ekr.20250512062255.1: *3* CT.test_import
-    def test_import(self):
+    def test_import(self) -> None:
         assert TestCase is not None
     #@+node:ekr.20250514060210.1: *3* CT.test_times
-    def test_times(self):
+    def test_times(self) -> None:
         # Report various times.
         from src.controller import core_path, core_names
         from src.controller import parse_ast
@@ -30,7 +31,7 @@ class CacheTests(TestCase):
 
         # Time to get all modification times.
         t1 = time.perf_counter()
-        mod_time_dict: dict[str, float] = {}
+        mod_time_dict: dict[str, Union[float, None]] = {}
         for path in paths:
             mod_time_dict[path] = os.path.getmtime(path)
 
@@ -42,7 +43,7 @@ class CacheTests(TestCase):
 
         # Time to parse all files.
         t3 = time.perf_counter()
-        tree_dict: dict[path, ast.AST] = {}
+        tree_dict: dict[str, Union[ast.AST, None]] = {}
         for path in paths:
             tree_dict[path] = parse_ast(contents_dict[path])
 
@@ -53,6 +54,9 @@ class CacheTests(TestCase):
         x.stats.append(('Parse all files', t4 - t3))
         # x.stats.append(('Test', 2.61))
         x.print_stats(paths)
+    #@+node:ekr.20250515090937.1: *3* CT.test_diff (To do)
+    def test_diffs(self) -> None:
+        pass  ###
     #@-others
 #@-others
 #@-leo
