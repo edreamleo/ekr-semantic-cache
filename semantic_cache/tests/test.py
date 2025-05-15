@@ -12,10 +12,10 @@ assert g
 #@+node:ekr.20250512073231.1: ** class CacheTests
 class CacheTests(TestCase):
     #@+others
-    #@+node:ekr.20250512062255.1: *3* CacheTests.test_import
+    #@+node:ekr.20250512062255.1: *3* CT.test_import
     def test_import(self):
         assert TestCase is not None
-    #@+node:ekr.20250514060210.1: *3* CacheTests.test_times
+    #@+node:ekr.20250514060210.1: *3* CT.test_times
     def test_times(self):
         # Report various times.
         from src.controller import core_path, core_names

@@ -165,6 +165,12 @@ class CacheController:
         t1 = time.perf_counter()
         self.cache = SemanticCache('semantic_cache.db')
 
+        # The list of all paths to be considered.
+        self.paths: list[str] = [
+            f"{core_path}{os.sep}{z}.py"
+            for z in core_names if os.path.exists(z)
+        ]
+
         # Dictionaries. Keys are full path names.
         self.module_dict: dict[str, Optional[Node]] = self.cache.get('module_dict') or {}
         self.mod_time_dict: dict[str, float] = self.cache.get('mod_time_dict') or {}
@@ -191,12 +197,12 @@ class CacheController:
         - Recompute gives/takes (defs/refs) data.
         """
         pass
-    #@+node:ekr.20250428034510.1: *3* CC.dump
-    def dump(self):
-        """Dump the modification times of all paths in the cache."""
-        g.trace(g.caller())
-        # g.printObj(list(self.module_dict.keys()), tag='module_dict')
-        # g.printObj(list(self.mod_time_dict.keys()), tag='mod_time_dict')
+    #@+node:ekr.20250428034510.1: *3* CC.dump_cache
+    def dump_cache(self):
+        """Dump the contents of the data to be written to the cache."""
+
+        # Dump the modification times
+        print('Dump of mod_time_dict...')
         for key, val in self.mod_time_dict.items():
             print(f"{val:<18} {key}")
     #@+node:ekr.20250427190307.1: *3* CC.get_changed_files
@@ -204,30 +210,28 @@ class CacheController:
         """
         Update the tree and modification file for all new and changed files.
         """
+        trace = not g.unitTesting
         t1 = time.perf_counter()
         updated_paths: list[str] = []
-        n_files = 0
-        for z in core_names:
-            n_files += 1
-            path = f"{core_path}{os.sep}{z}.py"
-            assert os.path.exists(path), repr(path)
+        for path in self.paths:
             mod_time = os.path.getmtime(path)
             old_mod_time = self.mod_time_dict.get(path, None)
-            if old_mod_time is None or mod_time > old_mod_time:
-                kind = 'Create' if old_mod_time is None else 'Update'
+            if old_mod_time is not None and mod_time > old_mod_time:
+                if trace:
+                    kind = 'Create' if old_mod_time is None else 'Update'
+                    print(f"{kind} {path} {time.ctime(mod_time)}")
                 updated_paths.append(path)
-                path_s = f"{z}.py"
-                print(f"{kind} {path_s} {time.ctime(mod_time)}")
                 contents = g.readFile(path)
                 tree = parse_ast(contents)
                 self.module_dict[path] = tree
                 self.mod_time_dict[path] = mod_time
         t2 = time.perf_counter()
         self.stats.append(('Find changed', t2 - t1))
-        # g.printObj(updated_paths)
+        if trace and updated_paths:
+            g.printObj(updated_paths, tag='Updated files')
         return updated_paths
     #@+node:ekr.20250514055617.1: *3* CC.main (entry)
-    def main(self):
+    def main(self) -> None:
         assert g.app is None, repr(g.app)
         assert g.unitTesting is False
         updated_files = self.get_changed_files()
@@ -260,6 +264,8 @@ class CacheController:
     #@+node:ekr.20250427194628.1: *3* CC.write_cache (revise??)
     def write_cache(self):
         """Update the persistent cache with all data."""
+
+        # All keys are full path names.
         t1 = time.perf_counter()
         self.cache['module_dict'] = self.module_dict
         self.cache['mod_time_dict'] = self.mod_time_dict
