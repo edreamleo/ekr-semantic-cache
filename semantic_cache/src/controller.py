@@ -58,7 +58,7 @@ annotate_fields = False
 include_attributes = False
 indent_ws = ' '
 
-def dump_ast(node: Node, level: int = 0) -> str:
+def dump_ast(node: Optional[Node], level: int = 0) -> str:
     """
     Dump an ast tree. Adapted from ast.dump.
     """
@@ -158,21 +158,6 @@ class CacheController:
     """The driver class for the semantic caching project."""
 
     #@+others
-    #@+node:ekr.20250428033750.1: *3* CC.__init__
-    def __init__(self) -> None:
-
-        # The persistent cache.
-        self.cache: Any = None
-
-        # The list of all paths to be considered.
-        self.paths: list[str] = []
-
-        # Dictionaries. Keys are full path names.
-        self.module_dict: dict[str, Optional[Node]] = {}
-        self.mod_time_dict: dict[str, float] = {}
-
-        # Stats.
-        self.stats: list[tuple[str, float]] = []
     #@+node:ekr.20250428100117.1: *3* CC.do_semanctics (To do)
     def do_semantics(self, updated_files: list[str]) -> None:
         """
@@ -180,23 +165,23 @@ class CacheController:
         - Recompute diffs,
         - Recompute gives/takes (defs/refs) data.
         """
-        # g.printObj(updated_files)
 
-        # Get the original tree.
+        # Get the original tree (in the cache)
         path = updated_files[0]
-        contents = g.readFile(path)
-        tree = parse_ast(contents)
+        old_tree = self.old_tree_dict[path]
+        new_tree = self.new_tree_dict[path]
+
+        # Get the new tree, from the changed file.
         if 1:
-            print(dump_ast(tree))
+            print(dump_ast(old_tree))
+            print(dump_ast(new_tree))
             print('')
-        # self.module_dict[path] = tree
-        # self.mod_time_dict[path] = mod_time
     #@+node:ekr.20250427190307.1: *3* CC.get_changed_files
     def get_changed_files(self) -> list[str]:
         """
         Update the tree and modification file for all new and changed files.
         """
-        trace = not g.unitTesting
+        trace = False
         t1 = time.perf_counter()
         updated_paths: list[str] = []
         for path in self.paths:
@@ -209,8 +194,10 @@ class CacheController:
                 updated_paths.append(path)
                 contents = g.readFile(path)
                 tree = parse_ast(contents)
-                self.module_dict[path] = tree
+                self.new_tree_dict[path] = tree
                 self.mod_time_dict[path] = mod_time
+            else:
+                self.new_tree_dict[path] = self.new_tree_dict[path]
         t2 = time.perf_counter()
         self.stats.append(('Find changed', t2 - t1))
         if trace and updated_paths:
@@ -220,17 +207,21 @@ class CacheController:
     def init(self) -> None:
 
         # The list of all paths to be considered.
-        self.paths = [
+        self.paths: list[str] = [
             f"{core_path}{os.sep}{z}.py"
             for z in core_names if os.path.exists(z)
         ]
 
+        # Init stats.
+        self.stats: list[tuple[str, float]] = []
+
         # Load the cache.
-        self.load_cache()
+        self.cache = self.load_cache()
 
         # Load dictionaries from the cache.
-        self.module_dict = self.cache.get('module_dict') or {}
-        self.mod_time_dict = self.cache.get('mod_time_dict') or {}
+        self.old_tree_dict: dict[str, Optional[Node]] = self.cache.get('old_tree_dict') or {}
+        self.new_tree_dict: dict[str, Optional[Node]] = {}
+        self.mod_time_dict: dict[str, float] = self.cache.get('mod_time_dict') or {}
     #@+node:ekr.20250514055617.1: *3* CC.main (entry)
     def main(self) -> None:
         assert g.app is None, repr(g.app)
@@ -247,6 +238,11 @@ class CacheController:
         self.stats.append(('Total', t2 - t1))
         self.print_stats(updated_files)
     #@+node:ekr.20250427200712.1: *3* CC: Cache methods
+    #@+node:ekr.20250515104457.1: *4* CC.clear_cache (unit testing)
+    def clear_cache(self):
+        assert g.unitTesting
+        self.cache['old_tree_dict'] = {}
+        self.cache['mod_time_dict'] = {}
     #@+node:ekr.20250515084324.1: *4* CC.commit_cache
     def commit_cache(self) -> None:
         """Commit the cache."""
@@ -255,7 +251,7 @@ class CacheController:
         t2 = time.perf_counter()
         self.stats.append(('Commit cache', t2 - t1))
 
-    #@+node:ekr.20250515084325.1: *4* CC.commit_cache
+    #@+node:ekr.20250515084325.1: *4* CC.close_cache
     def close_cache(self) -> None:
         """Close the cache."""
         t1 = time.perf_counter()
@@ -271,19 +267,20 @@ class CacheController:
         for key, val in self.mod_time_dict.items():
             print(f"{val:<18} {key}")
     #@+node:ekr.20250515084143.1: *4* CC.load_cache
-    def load_cache(self) -> None:
+    def load_cache(self) -> SemanticCache:
         """Load the persistent cache."""
         t1 = time.perf_counter()
-        self.cache = SemanticCache('semantic_cache.db')
+        cache = SemanticCache('semantic_cache.db')
         t2 = time.perf_counter()
         self.stats.append(('Load cache', (t2 - t1)))
+        return cache
     #@+node:ekr.20250427194628.1: *4* CC.write_cache
     def write_cache(self):
         """Update the persistent cache with all data."""
 
         # All keys are full path names.
         t1 = time.perf_counter()
-        self.cache['module_dict'] = self.module_dict
+        self.cache['old_tree_dict'] = self.new_tree_dict
         self.cache['mod_time_dict'] = self.mod_time_dict
         t2 = time.perf_counter()
         self.stats.append(('Write cache', (t2 - t1)))

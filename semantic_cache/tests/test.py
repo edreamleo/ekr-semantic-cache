@@ -12,6 +12,15 @@ assert g
 #@+others
 #@+node:ekr.20250512073231.1: ** class CacheTests
 class CacheTests(TestCase):
+
+    def setUp(self):
+        super().setUp()
+        g.unitTesting = True
+
+    def tearDown(self):
+        super().tearDown()
+        g.unitTesting = False
+
     #@+others
     #@+node:ekr.20250514060210.1: *3* CT.test_times
     def test_times(self) -> None:
@@ -60,15 +69,25 @@ class CacheTests(TestCase):
         directory = os.path.dirname(__file__)
         path = os.path.join(directory, 'dummy_test_program.py')
         assert os.path.exists(path)
+        sfn = g.shortFileName(path)
 
         from src.controller import CacheController, parse_ast
         x = CacheController()
         x.init()
+        x.clear_cache()
+
+        # 1. Update the dicts for the *original* test file.
+        old_contents = g.readFile(path)
+        x.old_tree_dict[path] = parse_ast(old_contents)
+        # g.printObj(old_contents, tag=f"OLD: {sfn}")
+
+        # 2. Update the file by hand.
+        new_contents = old_contents.replace('# [update] ', '')
+        # g.printObj(new_contents, tag=f"NEW {sfn}")
+        x.new_tree_dict[path] = parse_ast(new_contents)
+
+        # 3. Run do_semantics.
         x.do_semantics([path])
-        # contents = g.readFile(path)
-        # x.module_dict[path] = parse_ast(contents)
-        # self.mod_time_dict[path] = mod_time
-        # g.printObj(contents, tag=f"Contents of {g.shortFileName(path)}")
     #@-others
 #@-others
 #@-leo
