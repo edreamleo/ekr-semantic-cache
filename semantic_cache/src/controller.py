@@ -118,6 +118,7 @@ def ast_context(method: Callable) -> Callable:
     def wrapper(self: Any, node: Node) -> None:
         self.parent_context = self.context_stack[-1] if self.context_stack else None
         self.context_stack.append(node)
+        self.all_contexts.add(node)
         # g.printObj(self.context_stack, tag=method.__name__)
         method(self, node)
         self.context_stack.pop()
@@ -192,10 +193,16 @@ class CacheController:
             print('')
 
         # Visit all the nodes in the new tree.
-        Visitor(controller=self).visit(new_tree)  # type:ignore
-
+        v = Visitor(controller=self)
+        v.visit(new_tree)  # type:ignore
         t2 = time.perf_counter()
         self.stats.append(('Semantics', t2 - t1))
+
+        # Dumps.
+        if g.unitTesting:
+            v.dump_defs()
+            v.dump_refs()
+
     #@+node:ekr.20250427190307.1: *3* CC.get_changed_files
     def get_changed_files(self) -> list[str]:
         """
@@ -336,47 +343,79 @@ class Visitor(ast.NodeVisitor):
 
     def __init__(self, controller: CacheController) -> None:
         super().__init__()
+        self.all_contexts: set[Node] = set()
         self.controller = controller
-        self.context: list[Node] = []
         self.context_stack: list[Node] = []
+        self.module: Optional[Node] = None
         self.parent_context: Optional[Node] = None
 
     #@+others
+    #@+node:ekr.20250515180250.1: *3* v.dump_defs & dump_refs
+    def dump_defs(self) -> None:
+        for node in list(self.all_contexts):
+            defs = getattr(node, 'defs', [])
+            if defs:
+                name = getattr(node, 'name', 'Module')
+                print(f"Defs for {name}")
+                for z in defs:
+                    def_name = getattr(z, 'name', '??')
+                    print(f"  {z.__class__.__name__:>12}::{def_name} ")
+                print('')
+
+    def dump_refs(self) -> None:
+
+        for node in list(self.all_contexts):
+            refs = getattr(node, 'refs', [])
+            if refs:
+                name = getattr(node, 'name', 'Module')
+                print(f"Refs for {name}")
+                for z in refs:
+                    ref_name = getattr(z, 'name', '??')
+                    print(f"  {z.__class__.__name__:>12}::{ref_name} ")
+                print('')
     #@+node:ekr.20250515173146.1: *3* v.set_def & set_ref
     def set_def(self, node: Node) -> None:
-        assert self.parent_context, g.callers()
-        if 1:
+        def_context = self.parent_context or self.module
+        if 0:
             name = getattr(node, 'name', '<no name>')
-            parent_name = getattr(self.parent_context, 'name', self.parent_context.__class__.__name__)
+            parent_name = getattr(def_context, 'name', def_context.__class__.__name__)
             print(f"Def: {parent_name:>20}::{name}")
-        defs = getattr(self.parent_context, 'defs', [])
+        defs = getattr(def_context, 'defs', [])
         defs.append(node)
+        def_context.defs = defs  # type:ignore
 
     def set_ref(self, node: Node) -> None:
-        assert self.parent_context, g.callers()
-        if 1:
+        ref_context = self.parent_context or self.module
+        if 0:
             name = getattr(node, 'name', '<no name>')
-            parent_name = getattr(self.parent_context, 'name', self.parent_context.__class__.__name__)
+            parent_name = getattr(ref_context, 'name', ref_context.__class__.__name__)
             print(f"Ref: {parent_name:>20}::{name}")
-        refs = getattr(self.parent_context, 'refs', [])
+        refs = getattr(ref_context, 'refs', [])
         refs.append(node)
+        ref_context.defs = refs  # type:ignore
     #@+node:ekr.20250515130057.1: *3* v.visit_ClassDef
     @ast_context
     def visit_ClassDef(self, node: Node) -> None:
-        # tag_s = f"class {node.name}"
-        # print(f"{tag_s:>20} parent_context: {self.parent_context.__class__.__name__}")
         self.set_def(node)
         self.generic_visit(node)
     #@+node:ekr.20250515130541.1: *3* v.visit_FunctionDef
     @ast_context
     def visit_FunctionDef(self, node: Node) -> None:
-        # tag_s = f"def {node.name}"
-        # print(f"{tag_s:>20} parent_context: {self.parent_context.__class__.__name__}")
         self.set_def(node)
+        self.generic_visit(node)
+    #@+node:ekr.20250515174705.1: *3* v.visit_Import
+    def visit_Import(self, node: Node) -> None:
+        names = getattr(node, 'names', [])
+        for alias in names:
+            # name = alias.name
+            # as_name = getattr(alias, 'asname', None)
+            # def_name = as_name or name
+            self.set_def(alias)
         self.generic_visit(node)
     #@+node:ekr.20250515131258.1: *3* v.visit_Module
     @ast_context
     def visit_Module(self, node: Node) -> None:
+        self.module = node
         self.generic_visit(node)
     #@-others
 #@-others

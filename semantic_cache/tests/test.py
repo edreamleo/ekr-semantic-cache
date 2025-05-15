@@ -7,9 +7,10 @@ import time
 from typing import Union
 from unittest import TestCase
 from leo.core import leoGlobals as g
-from src.controller import CacheController, parse_ast
+from src.controller import CacheController, dump_ast, parse_ast
 
 assert g
+assert dump_ast
 
 #@+others
 #@+node:ekr.20250512073231.1: ** class CacheTests
@@ -81,6 +82,7 @@ class CacheTests(TestCase):
         # Set new_tree_dict from the *new) contents.
         new_contents = old_contents.replace('# [update] ', '')
         x.new_tree_dict[path] = parse_ast(new_contents)
+        # print(dump_ast(x.new_tree_dict[path]))
 
         # Run do_semantics.
         x.do_semantics([path])
