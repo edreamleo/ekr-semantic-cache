@@ -165,6 +165,7 @@ class CacheController:
         - Recompute diffs,
         - Recompute gives/takes (defs/refs) data.
         """
+        t1 = time.perf_counter()
 
         # Get the original tree (in the cache)
         path = updated_files[0]
@@ -176,6 +177,12 @@ class CacheController:
             print(dump_ast(old_tree))
             print(dump_ast(new_tree))
             print('')
+
+        # Visit all the nodes in the new tree.
+        Visitor(controller=self).visit(new_tree)
+
+        t2 = time.perf_counter()
+        self.stats.append(('Semantics', t2 - t1))
     #@+node:ekr.20250427190307.1: *3* CC.get_changed_files
     def get_changed_files(self) -> list[str]:
         """
@@ -310,6 +317,28 @@ class class_cache:
 #@+node:ekr.20250426053807.1: ** class module_cache
 class module_cache:
     """A class containing all cached data from one Python module."""
+#@+node:ekr.20250515125921.1: ** class Visitor (ast.NodeVisitor)
+class Visitor(ast.NodeVisitor):
+    """A visitor class to create refs/defs data."""
+
+    def __init__(self, controller: CacheController) -> None:
+        super().__init__()
+        self.controller = controller
+
+    #@+others
+    #@+node:ekr.20250515130057.1: *3* v.visit_ClassDef
+    def visit_ClassDef(self, node: Node) -> None:
+        g.trace(node.name)
+        self.generic_visit(node)
+    #@+node:ekr.20250515130541.1: *3* v.visit_FunctionDef
+    def visit_FunctionDef(self, node: Node) -> None:
+        g.trace(node.name)
+        self.generic_visit(node)
+    #@+node:ekr.20250515131258.1: *3* v.visit_Module
+    def visit_Module(self, node: Node) -> None:
+        g.trace(f"len(body): {len(node.body)}")
+        self.generic_visit(node)
+    #@-others
 #@-others
 
 if __name__ == "__main__":

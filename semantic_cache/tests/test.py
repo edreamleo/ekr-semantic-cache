@@ -8,6 +8,7 @@ from typing import Union
 from unittest import TestCase
 from leo.core import leoGlobals as g
 from src.controller import CacheController, parse_ast
+
 assert g
 
 #@+others
