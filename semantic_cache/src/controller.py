@@ -10,7 +10,7 @@ import pickle
 import sqlite3
 import sys
 import time
-from typing import Any, Generator, Optional
+from typing import Any, Callable, Generator, Optional
 import zlib
 
 leo_path = r'C:\Repos\leo-editor'
@@ -111,6 +111,19 @@ def parse_ast(contents: str) -> Optional[ast.AST]:
         oops('Unexpected Exception')
         g.es_exception()
     return None
+#@+node:ekr.20250515155334.1: *3* function: ast_context
+def ast_context(method: Callable) -> Callable:
+    """A a decorator for ast contexts."""
+
+    def wrapper(self: Any, node: Node) -> None:
+        self.parent_context = self.context_stack[-1] if self.context_stack else None
+        self.context_stack.append(node)
+        # g.printObj(self.context_stack, tag=method.__name__)
+        method(self, node)
+        self.context_stack.pop()
+        self.parent_context = self.context_stack[-1] if self.context_stack else None
+
+    return wrapper
 #@+node:ekr.20250427052951.1: ** class SemanticCache(SqlitePickleShare)
 class SemanticCache(SqlitePickleShare):
     """The persistent cache object"""
@@ -173,13 +186,13 @@ class CacheController:
         new_tree = self.new_tree_dict[path]
 
         # Get the new tree, from the changed file.
-        if 1:
+        if 0:
             print(dump_ast(old_tree))
             print(dump_ast(new_tree))
             print('')
 
         # Visit all the nodes in the new tree.
-        Visitor(controller=self).visit(new_tree)
+        Visitor(controller=self).visit(new_tree)  # type:ignore
 
         t2 = time.perf_counter()
         self.stats.append(('Semantics', t2 - t1))
@@ -324,19 +337,46 @@ class Visitor(ast.NodeVisitor):
     def __init__(self, controller: CacheController) -> None:
         super().__init__()
         self.controller = controller
+        self.context: list[Node] = []
+        self.context_stack: list[Node] = []
+        self.parent_context: Optional[Node] = None
 
     #@+others
+    #@+node:ekr.20250515173146.1: *3* v.set_def & set_ref
+    def set_def(self, node: Node) -> None:
+        assert self.parent_context, g.callers()
+        if 1:
+            name = getattr(node, 'name', '<no name>')
+            parent_name = getattr(self.parent_context, 'name', self.parent_context.__class__.__name__)
+            print(f"Def: {parent_name:>20}::{name}")
+        defs = getattr(self.parent_context, 'defs', [])
+        defs.append(node)
+
+    def set_ref(self, node: Node) -> None:
+        assert self.parent_context, g.callers()
+        if 1:
+            name = getattr(node, 'name', '<no name>')
+            parent_name = getattr(self.parent_context, 'name', self.parent_context.__class__.__name__)
+            print(f"Ref: {parent_name:>20}::{name}")
+        refs = getattr(self.parent_context, 'refs', [])
+        refs.append(node)
     #@+node:ekr.20250515130057.1: *3* v.visit_ClassDef
+    @ast_context
     def visit_ClassDef(self, node: Node) -> None:
-        g.trace(node.name)
+        # tag_s = f"class {node.name}"
+        # print(f"{tag_s:>20} parent_context: {self.parent_context.__class__.__name__}")
+        self.set_def(node)
         self.generic_visit(node)
     #@+node:ekr.20250515130541.1: *3* v.visit_FunctionDef
+    @ast_context
     def visit_FunctionDef(self, node: Node) -> None:
-        g.trace(node.name)
+        # tag_s = f"def {node.name}"
+        # print(f"{tag_s:>20} parent_context: {self.parent_context.__class__.__name__}")
+        self.set_def(node)
         self.generic_visit(node)
     #@+node:ekr.20250515131258.1: *3* v.visit_Module
+    @ast_context
     def visit_Module(self, node: Node) -> None:
-        g.trace(f"len(body): {len(node.body)}")
         self.generic_visit(node)
     #@-others
 #@-others
