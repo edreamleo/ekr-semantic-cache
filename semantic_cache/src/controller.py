@@ -161,42 +161,18 @@ class CacheController:
     #@+node:ekr.20250428033750.1: *3* CC.__init__
     def __init__(self) -> None:
 
-        # Set the global start time.
-        self.start_time = t1 = time.perf_counter()
-
-        # Load the persistent cache.
-        self.cache = SemanticCache('semantic_cache.db')
+        # The persistent cache.
+        self.cache: SemanticCache = None  # type:ignore
 
         # The list of all paths to be considered.
-        self.paths: list[str] = [
-            f"{core_path}{os.sep}{z}.py"
-            for z in core_names if os.path.exists(z)
-        ]
+        self.paths: list[str] = []
 
         # Dictionaries. Keys are full path names.
-        self.module_dict: dict[str, Optional[Node]] = self.cache.get('module_dict') or {}
-        self.mod_time_dict: dict[str, float] = self.cache.get('mod_time_dict') or {}
+        self.module_dict: dict[str, Optional[Node]] = {}
+        self.mod_time_dict: dict[str, float] = {}
 
-        # Stats:
-        t2 = time.perf_counter()
-        self.stats: list[tuple[str, float]] = [
-            ('Load cache', (t2 - t1)),
-        ]
-
-    #@+node:ekr.20250427200712.1: *3* CC.commit & close
-    def commit(self) -> None:
-        """Commit the cache."""
-        t1 = time.perf_counter()
-        self.cache.conn.commit()
-        t2 = time.perf_counter()
-        self.stats.append(('Commit cache', t2 - t1))
-
-    def close(self) -> None:
-        """Close the cache."""
-        t1 = time.perf_counter()
-        self.cache.conn.close()
-        t2 = time.perf_counter()
-        self.stats.append(('Close cache', t2 - t1))
+        # Stats.
+        self.stats: list[tuple[str, float]] = []
     #@+node:ekr.20250428100117.1: *3* CC.do_semanctics (To do)
     def do_semantics(self, updated_files: list[str]) -> None:
         """
@@ -205,15 +181,37 @@ class CacheController:
         - Recompute gives/takes (defs/refs) data.
         """
         pass
-    #@+node:ekr.20250428034510.1: *3* CC.dump_cache
-    def dump_cache(self):
-        """Dump the contents of the data to be written to the cache."""
+    #@+node:ekr.20250514055617.1: *3* CC.main (entry) & helpers
+    def main(self) -> None:
+        assert g.app is None, repr(g.app)
+        assert g.unitTesting is False
+        t1 = time.perf_counter()
+        self.init()
+        updated_files = self.get_changed_files()
+        if updated_files:
+            self.do_semantics(updated_files)
+            self.write_cache()
+            self.commit_cache()
+        self.close_cache()
+        t2 = time.perf_counter()
+        self.stats.append(('Total', t2 - t1))
+        self.print_stats(updated_files)
+    #@+node:ekr.20250515083553.1: *4* CC.init
+    def init(self) -> None:
 
-        # Dump the modification times
-        print('Dump of mod_time_dict...')
-        for key, val in self.mod_time_dict.items():
-            print(f"{val:<18} {key}")
-    #@+node:ekr.20250427190307.1: *3* CC.get_changed_files
+        # The list of all paths to be considered.
+        self.paths = [
+            f"{core_path}{os.sep}{z}.py"
+            for z in core_names if os.path.exists(z)
+        ]
+
+        # Load the cache.
+        self.load_cache()
+
+        # Load dictionaries from the cache.
+        self.module_dict = self.cache.get('module_dict') or {}
+        self.mod_time_dict = self.cache.get('mod_time_dict') or {}
+    #@+node:ekr.20250427190307.1: *4* CC.get_changed_files
     def get_changed_files(self) -> list[str]:
         """
         Update the tree and modification file for all new and changed files.
@@ -238,20 +236,49 @@ class CacheController:
         if trace and updated_paths:
             g.printObj(updated_paths, tag='Updated files')
         return updated_paths
-    #@+node:ekr.20250514055617.1: *3* CC.main (entry)
-    def main(self) -> None:
-        assert g.app is None, repr(g.app)
-        assert g.unitTesting is False
-        updated_files = self.get_changed_files()
-        if updated_files:
-            self.do_semantics(updated_files)
-            self.write_cache()
-            self.commit()
-        self.close()
+    #@+node:ekr.20250427200712.1: *3* CC: Cache methods
+    #@+node:ekr.20250515084324.1: *4* CC.commit_cache
+    def commit_cache(self) -> None:
+        """Commit the cache."""
+        t1 = time.perf_counter()
+        self.cache.conn.commit()
         t2 = time.perf_counter()
-        self.stats.append(('Total', t2 - self.start_time))
-        self.print_stats(updated_files)
-    #@+node:ekr.20250428071526.1: *3* CC.print_stats
+        self.stats.append(('Commit cache', t2 - t1))
+
+    #@+node:ekr.20250515084325.1: *4* CC.commit_cache
+    def close_cache(self) -> None:
+        """Close the cache."""
+        t1 = time.perf_counter()
+        self.cache.conn.close()
+        t2 = time.perf_counter()
+        self.stats.append(('Close cache', t2 - t1))
+    #@+node:ekr.20250428034510.1: *4* CC.dump_cache
+    def dump_cache(self):
+        """Dump the contents of the data to be written to the cache."""
+
+        # Dump the modification times
+        print('Dump of mod_time_dict...')
+        for key, val in self.mod_time_dict.items():
+            print(f"{val:<18} {key}")
+    #@+node:ekr.20250515084143.1: *4* CC.load_cache
+    def load_cache(self) -> None:
+        """Load the persistent cache."""
+        t1 = time.perf_counter()
+        self.cache = SemanticCache('semantic_cache.db')
+        t2 = time.perf_counter()
+        self.stats.append(('Load cache', (t2 - t1)))
+    #@+node:ekr.20250427194628.1: *4* CC.write_cache
+    def write_cache(self):
+        """Update the persistent cache with all data."""
+
+        # All keys are full path names.
+        t1 = time.perf_counter()
+        self.cache['module_dict'] = self.module_dict
+        self.cache['mod_time_dict'] = self.mod_time_dict
+        t2 = time.perf_counter()
+        self.stats.append(('Write cache', (t2 - t1)))
+    #@+node:ekr.20250515084512.1: *3* CC: Stats
+    #@+node:ekr.20250428071526.1: *4* CC.print_stats
     def print_stats(self, updated_files: list[str]) -> None:
 
         # Get the max length of all keys.
@@ -269,16 +296,6 @@ class CacheController:
         print(f"{n} updated file{g.plural(n)}")
         for key, value in self.stats:
             print(f"{pad(key)} {value:.2f} sec.")
-    #@+node:ekr.20250427194628.1: *3* CC.write_cache (revise??)
-    def write_cache(self):
-        """Update the persistent cache with all data."""
-
-        # All keys are full path names.
-        t1 = time.perf_counter()
-        self.cache['module_dict'] = self.module_dict
-        self.cache['mod_time_dict'] = self.mod_time_dict
-        t2 = time.perf_counter()
-        self.stats.append(('Write cache', (t2 - t1)))
     #@-others
 #@+node:ekr.20250426053702.1: ** class class_cache
 class class_cache:
