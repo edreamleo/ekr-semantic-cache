@@ -63,8 +63,8 @@ class CacheTests(TestCase):
         x.stats.append(('Parse all files', t4 - t3))
         # x.stats.append(('Test', 2.61))
         x.print_stats(paths)
-    #@+node:ekr.20250515090937.1: *3* CT.test_diff
-    def test_diffs(self) -> None:
+    #@+node:ekr.20250515090937.1: *3* CT.test_semantics
+    def test_semantics(self) -> None:
 
         directory = os.path.dirname(__file__)
         path = os.path.join(directory, 'dummy_test_program.py')
@@ -76,17 +76,15 @@ class CacheTests(TestCase):
         x.init()
         x.clear_cache()
 
-        # 1. Update the dicts for the *original* test file.
+        # Set old_tree_dict from the *old* contents.
         old_contents = g.readFile(path)
         x.old_tree_dict[path] = parse_ast(old_contents)
-        # g.printObj(old_contents, tag=f"OLD: {sfn}")
 
-        # 2. Update the file by hand.
+        # Set new_tree_dict from the *new) contents.
         new_contents = old_contents.replace('# [update] ', '')
-        # g.printObj(new_contents, tag=f"NEW {sfn}")
         x.new_tree_dict[path] = parse_ast(new_contents)
 
-        # 3. Run do_semantics.
+        # Run do_semantics.
         x.do_semantics([path])
     #@-others
 #@-others
