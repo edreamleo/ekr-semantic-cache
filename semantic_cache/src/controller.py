@@ -180,7 +180,17 @@ class CacheController:
         - Recompute diffs,
         - Recompute gives/takes (defs/refs) data.
         """
-        pass
+        # g.printObj(updated_files)
+
+        # Get the original tree.
+        path = updated_files[0]
+        contents = g.readFile(path)
+        tree = parse_ast(contents)
+        if 1:
+            print(dump_ast(tree))
+            print('')
+        # self.module_dict[path] = tree
+        # self.mod_time_dict[path] = mod_time
     #@+node:ekr.20250427190307.1: *3* CC.get_changed_files
     def get_changed_files(self) -> list[str]:
         """

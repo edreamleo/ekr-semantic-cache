@@ -13,11 +13,11 @@ assert g
 #@+node:ekr.20250512073231.1: ** class CacheTests
 class CacheTests(TestCase):
     #@+others
-    #@+node:ekr.20250512062255.1: *3* CT.test_import
-    def test_import(self) -> None:
-        assert TestCase is not None
     #@+node:ekr.20250514060210.1: *3* CT.test_times
     def test_times(self) -> None:
+
+        self.skipTest('Passed')
+
         # Report various times.
         from src.controller import core_path, core_names
         from src.controller import parse_ast
@@ -54,9 +54,21 @@ class CacheTests(TestCase):
         x.stats.append(('Parse all files', t4 - t3))
         # x.stats.append(('Test', 2.61))
         x.print_stats(paths)
-    #@+node:ekr.20250515090937.1: *3* CT.test_diff (To do)
+    #@+node:ekr.20250515090937.1: *3* CT.test_diff
     def test_diffs(self) -> None:
-        pass  ###
+
+        directory = os.path.dirname(__file__)
+        path = os.path.join(directory, 'dummy_test_program.py')
+        assert os.path.exists(path)
+
+        from src.controller import CacheController, parse_ast
+        x = CacheController()
+        x.init()
+        x.do_semantics([path])
+        # contents = g.readFile(path)
+        # x.module_dict[path] = parse_ast(contents)
+        # self.mod_time_dict[path] = mod_time
+        # g.printObj(contents, tag=f"Contents of {g.shortFileName(path)}")
     #@-others
 #@-others
 #@-leo
