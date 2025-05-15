@@ -239,7 +239,7 @@ class CacheController:
         self.print_stats(updated_files)
     #@+node:ekr.20250427200712.1: *3* CC: Cache methods
     #@+node:ekr.20250515104457.1: *4* CC.clear_cache (unit testing)
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         assert g.unitTesting
         self.cache['old_tree_dict'] = {}
         self.cache['mod_time_dict'] = {}
@@ -259,7 +259,7 @@ class CacheController:
         t2 = time.perf_counter()
         self.stats.append(('Close cache', t2 - t1))
     #@+node:ekr.20250428034510.1: *4* CC.dump_cache
-    def dump_cache(self):
+    def dump_cache(self) -> None:
         """Dump the contents of the data to be written to the cache."""
 
         # Dump the modification times
@@ -275,7 +275,7 @@ class CacheController:
         self.stats.append(('Load cache', (t2 - t1)))
         return cache
     #@+node:ekr.20250427194628.1: *4* CC.write_cache
-    def write_cache(self):
+    def write_cache(self) -> None:
         """Update the persistent cache with all data."""
 
         # All keys are full path names.

@@ -13,11 +13,11 @@ assert g
 #@+node:ekr.20250512073231.1: ** class CacheTests
 class CacheTests(TestCase):
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         g.unitTesting = True
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         super().tearDown()
         g.unitTesting = False
 
